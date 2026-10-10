@@ -55,8 +55,10 @@ points here; this file holds the operational detail.
   proven on the bench. Two bugs were found and fixed on the way: streaming-mode
   esp_http_client does not auto-follow redirects, and the default 512-byte TX buffer
   cannot hold the ~800-character signed URL. Both live in `src/http_get.cpp`.
-- The WiFiManager WPA2 portal: NVS was erased on the bench to force it; see the
-  activity log for whether a phone joined and saved credentials through it.
+- (Resolved 2026-10-10) WiFiManager WPA2 portal: after an NVS erase the board opened
+  `Jukebox-Setup` with its random key, Praveen joined from his phone, picked the
+  network, and the board connected, checked for updates and loaded channels. The
+  whole first-boot path is proven.
 - (Resolved) The 20 feed URLs: the first `channels` run failed two, Marketplace and WTF;
   both fixed and all 20 validated on 2026-10-10.
 - KCX_BT_EMITTER AT command behaviour (scan list, auto-reconnect).
