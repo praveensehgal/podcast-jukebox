@@ -12,7 +12,12 @@ points here; this file holds the operational detail.
   (`src/channels.cpp`, cached in LittleFS), prints the list, idles.
 - CI: `build.yml` on every push, `release.yml` on `v*` tags, `channels.yml` when
   `channels.md` changes on `main`.
-- Nothing has run on hardware yet.
+- Runs on hardware. Sunton MAC d4:8c:49:57:1a:24 on the bench (USB port shows as
+  `cu.wchusbserial2140` on the Mac Studio). On 2026-10-10 a 0.0.0-dev build found
+  v0.1.1 on GitHub, streamed 1,314,816 bytes through two redirects, verified the
+  sha256, flipped to app1, rebooted into the CI-built 0.1.1, reported "up to date" and
+  listed 20 channels. The v0.1.0 image cannot follow redirects (see decision 003
+  notes) and is superseded.
 
 ## Evidence
 
@@ -45,19 +50,20 @@ points here; this file holds the operational detail.
 
 - That the Sunton's ESP32 (no PSRAM) can stream MP3 over HTTPS while LVGL drives a
   480 × 320 panel. This is the go / no-go spike before any enclosure work.
-- `esp_crt_bundle_attach` under the pioarduino arduino-esp32 3.x build; it compiles, but
-  a live TLS fetch to GitHub has not been run.
-- esp_http_client following GitHub's 302 to `release-assets.githubusercontent.com`
-  (about 800 characters of signed URL) for the `firmware.bin` download.
+- (Resolved 2026-10-10) TLS via `esp_crt_bundle_attach`, the two-hop redirect to
+  `release-assets.githubusercontent.com`, the OTA write, LittleFS on min_spiffs: all
+  proven on the bench. Two bugs were found and fixed on the way: streaming-mode
+  esp_http_client does not auto-follow redirects, and the default 512-byte TX buffer
+  cannot hold the ~800-character signed URL. Both live in `src/http_get.cpp`.
+- The WiFiManager WPA2 portal: NVS was erased on the bench to force it; see the
+  activity log for whether a phone joined and saved credentials through it.
 - (Resolved) The 20 feed URLs: the first `channels` run failed two, Marketplace and WTF;
   both fixed and all 20 validated on 2026-10-10.
 - KCX_BT_EMITTER AT command behaviour (scan list, auto-reconnect).
 
 ## Next steps, in order
 
-1. Bench: `scripts/flash.sh` on one Sunton board, join `Jukebox-Setup` from a phone,
-   watch it self-update from 0.0.0-dev to 0.1.0 and print 20 channels. First hardware
-   proof of TLS, redirect, OTA write and LittleFS.
+1. (Done 2026-10-10) Bench flash and self-update from 0.0.0-dev to 0.1.1.
 2. Streaming + screen spike on the Sunton.
 3. Resolver service (Mac Studio): feeds → episode lists, resume positions.
 4. LVGL screens 1–3, then settings, Wi-Fi, Bluetooth.
