@@ -158,7 +158,7 @@ static void bindRow(List& l, int i, int index) {
 void listRedraw(List& l) {
     for (int i = 0; i < l.visible; i++) bindRow(l, i, l.first + i);
     scrollbarSet(l.sb, l.first, l.visible, l.total);
-    if (l.hdr) headerCount(*l.hdr, l.total ? l.selected + 1 : 0, l.total);
+    if (l.hdr) headerCount(*l.hdr, (l.total && l.selected < l.countTotal) ? l.selected + 1 : 0, l.countTotal);
 }
 
 void listSelect(List& l, int index) {

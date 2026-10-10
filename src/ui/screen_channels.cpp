@@ -33,6 +33,7 @@ void channelArt(const char* name, char* out, uint32_t& color) {
 }
 
 static void provide(int index, widgets::RowData& d) {
+    if (index >= (int)data->size()) { d.name = "Settings"; d.separator = true; return; }
     const channels::Channel& c = (*data)[index];
     d.name = c.name.c_str();
     int slot = index % 8;
@@ -63,7 +64,8 @@ void channelsShow(const std::vector<channels::Channel>& list, int selected) {
     widgets::list(lst, scr, theme::kRowsVisible, &hdr);
     lst.provider = provide;
     lst.selected = selected;
-    widgets::listSetTotal(lst, (int)list.size());
+    lst.countTotal = (int)list.size();
+    widgets::listSetTotal(lst, (int)list.size() + 1);  // + "Settings" row past the last channel
     widgets::show(scr);
 }
 

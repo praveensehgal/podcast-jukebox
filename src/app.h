@@ -13,7 +13,8 @@
 //   OK on Playing: back to this channel's episode list, audio keeps going.
 namespace app {
 
-void begin(std::vector<channels::Channel>* list);
+// `hotspotKey` is shown in the Wi-Fi screen's QR code.
+void begin(std::vector<channels::Channel>* list, const String& hotspotKey);
 void handle(const input::Event& e);
 void loop();  // position reporting, Now Playing refresh, end-of-episode handling
 

@@ -52,6 +52,7 @@ struct List {
     lv_obj_t* names[8];
     lv_obj_t* values[8];
     int total = 0;
+    int countTotal = 0;   // rows that count toward "n of N" (excludes trailing separators)
     int selected = 0;
     int first = 0;
     int visible = 8;

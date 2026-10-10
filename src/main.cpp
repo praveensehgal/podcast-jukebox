@@ -12,6 +12,7 @@
 
 #include "app.h"
 #include "audio_out.h"
+#include "bt_emitter.h"
 #include "channels.h"
 #include "display.h"
 #include "input.h"
@@ -102,7 +103,8 @@ void setup() {
     }
     loadChannels();
     audio_out::begin();
-    app::begin(&channelList);
+    bt::begin();
+    app::begin(&channelList, setupKey());
     Serial.println("[boot] ready");
 }
 
