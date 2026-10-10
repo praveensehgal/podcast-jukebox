@@ -1,6 +1,6 @@
 // LovyanGFX board definition + LVGL 9 glue for the Sunton ESP32-3248S035R.
-// Pin map and the invert=false finding come from the esp32-mac-macro-pad project,
-// which runs on the same board (verified on hardware 2026-08-22).
+// Pin map, invert=false and the XPT2046 calibration come from the esp32-mac-macro-pad
+// project, which ran on this exact board (board 1, verified 2026-08-22).
 
 #include "display.h"
 
@@ -13,6 +13,7 @@ class Panel : public lgfx::LGFX_Device {
     lgfx::Panel_ST7796 _panel;
     lgfx::Bus_SPI _bus;
     lgfx::Light_PWM _light;
+    lgfx::Touch_XPT2046 _touch;
 
    public:
     Panel() {
@@ -48,7 +49,7 @@ class Panel : public lgfx::LGFX_Device {
             cfg.invert = false;      // true renders every colour as its negative on this panel
             cfg.rgb_order = false;
             cfg.dlen_16bit = false;
-            cfg.bus_shared = true;   // XPT2046 shares the bus even though we never talk to it
+            cfg.bus_shared = true;   // XPT2046 shares this SPI bus
             _panel.config(cfg);
         }
         {
@@ -60,13 +61,30 @@ class Panel : public lgfx::LGFX_Device {
             _light.config(cfg);
             _panel.setLight(&_light);
         }
+        {   // resistive touch on the same HSPI bus; raw range is a placeholder, the
+            // per-panel corner calibration below is what maps it to the screen
+            auto cfg = _touch.config();
+            cfg.x_min = 300; cfg.x_max = 3900; cfg.y_min = 200; cfg.y_max = 3800;
+            cfg.pin_int = 36;
+            cfg.bus_shared = true;
+            cfg.offset_rotation = 0;
+            cfg.spi_host = HSPI_HOST;
+            cfg.freq = 1000000;
+            cfg.pin_sclk = 14; cfg.pin_mosi = 13; cfg.pin_miso = 12; cfg.pin_cs = 33;
+            _touch.config(cfg);
+            _panel.setTouch(&_touch);
+        }
         setPanel(&_panel);
     }
 };
 
 static Panel tft;
 static lv_display_t* disp = nullptr;
-static const int kBufLines = 40;  // 480 * 40 * 2 bytes = 37.5 KB, single buffer, DRAM
+// 480 * 10 * 2 bytes = 9.4 KB, single buffer, DRAM. It was 40 lines (37.5 KB) until
+// 2026-10-10: an open TLS audio stream measured 56 KB of byte-addressable heap, which
+// left 21 KB for a ring buffer and MP3 decoder that need about 40. The screen repaints
+// in more, smaller strips; the heap goes to audio.
+static const int kBufLines = 10;
 static uint16_t* drawBuf = nullptr;
 
 static void flush(lv_display_t* d, const lv_area_t* area, uint8_t* px) {
@@ -81,13 +99,27 @@ static void flush(lv_display_t* d, const lv_area_t* area, uint8_t* px) {
 
 static uint32_t tickMs() { return millis(); }
 
-void begin() {
-    // Keep the untouched XPT2046 deselected so it never drives MISO during panel writes.
-    pinMode(33, OUTPUT);
-    digitalWrite(33, HIGH);
+// Corners measured on this panel with the macro pad's touch_cal tool, setRotation(1).
+// Order: raw (x, y) at top-left, top-right, bottom-left, bottom-right.
+static uint16_t kTouchCal[8] = {3578, 3688, 3588, 361, 491, 3710, 474, 376};
 
+static void touchRead(lv_indev_t*, lv_indev_data_t* data) {
+    static bool wasDown = false;
+    uint16_t x, y;
+    bool down = tft.getTouch(&x, &y);
+    if (down) {
+        data->point.x = x;
+        data->point.y = y;
+        if (!wasDown) Serial.printf("[touch] %u,%u\n", x, y);
+    }
+    data->state = down ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
+    wasDown = down;
+}
+
+void begin() {
     tft.init();
     tft.setRotation(1);  // landscape, USB on the right
+    tft.setTouchCalibrate(kTouchCal);
     tft.setBrightness(255);
     tft.fillScreen(TFT_BLACK);
 
@@ -99,6 +131,9 @@ void begin() {
     lv_display_set_buffers(disp, drawBuf, nullptr, kWidth * kBufLines * sizeof(uint16_t),
                            LV_DISPLAY_RENDER_MODE_PARTIAL);
     lv_display_set_flush_cb(disp, flush);
+    lv_indev_t* touch = lv_indev_create();
+    lv_indev_set_type(touch, LV_INDEV_TYPE_POINTER);
+    lv_indev_set_read_cb(touch, touchRead);
     Serial.printf("[display] ST7796 up, draw buffer %u bytes, free heap %u\n",
                   (unsigned)(kWidth * kBufLines * 2), (unsigned)ESP.getFreeHeap());
 }

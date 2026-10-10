@@ -2,8 +2,7 @@
 #include <lvgl.h>
 
 // Sunton ESP32-3248S035R panel (ST7796, 480x320 landscape) driven by LovyanGFX,
-// presented to LVGL 9 as a single display. Touch is deliberately not wired up:
-// the device is knob-and-button only (decision 001).
+// presented to LVGL 9 as one display plus one pointer input (XPT2046 resistive touch).
 namespace display {
 
 static const int kWidth = 480;

@@ -30,7 +30,7 @@ void bootShow(const char* version) {
     lv_obj_align(t, LV_ALIGN_TOP_LEFT, 20, 26);
 
     lv_obj_t* v = lv_label_create(bar);
-    lv_obj_set_style_text_font(v, theme::fontHeader(), 0);
+    lv_obj_set_style_text_font(v, theme::fontMed(), 0);
     lv_obj_set_style_text_color(v, theme::white(), 0);
     lv_obj_set_style_text_opa(v, LV_OPA_70, 0);
     lv_label_set_text_fmt(v, "version %s", version);

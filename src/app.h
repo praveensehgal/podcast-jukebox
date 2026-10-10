@@ -6,16 +6,15 @@
 #include "channels.h"
 #include "input.h"
 
-// The state machine behind the three main screens (decision 001):
-//   Channels --OK--> Episodes --OK--> Playing
-//   STOP from anywhere: stop audio, save position, back to Channels.
-//   PAUSE from anywhere: toggle the current episode.
-//   OK on Playing: back to this channel's episode list, audio keeps going.
+// Touch navigation (decision 004) plus the three top buttons:
+//   Channels --tap--> Episodes --tap--> Now Playing;  Back in the header goes up one level.
+//   PLAY resumes the last episode, PAUSE toggles, STOP saves the place and returns to
+//   Channels from anywhere, holding STOP for 3 s opens Settings.
 namespace app {
 
-// `hotspotKey` is shown in the Wi-Fi screen's QR code.
+// `hotspotKey` is the setup hotspot's WPA2 key, shown on the phone-setup screen.
 void begin(std::vector<channels::Channel>* list, const String& hotspotKey);
 void handle(const input::Event& e);
-void loop();  // position reporting, Now Playing refresh, end-of-episode handling
+void loop();   // position saves, Now Playing refresh, end of episode, sleep timer
 
 }  // namespace app

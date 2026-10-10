@@ -15,6 +15,9 @@ void begin();
 bool play(const String& url, uint32_t resumeSeconds = 0, uint32_t sizeBytes = 0, uint32_t totalSeconds = 0);
 void pause(bool paused);
 bool isPaused();
+// Jump to `seconds` by reopening the stream at the matching byte offset (CBR guess).
+// False when the size or length is unknown, or the stream will not reopen.
+bool seekTo(uint32_t seconds);
 void stop();
 bool isPlaying();
 void setVolume(uint8_t level16);   // 0..16, mapped to the decoder's 0..21

@@ -48,7 +48,7 @@
 #define LV_USE_QRCODE 1
 #define LV_USE_ARC 0
 #define LV_USE_BUTTON 0
-#define LV_USE_BUTTONMATRIX 0
+#define LV_USE_BUTTONMATRIX 1   /* Wi-Fi password keyboard */
 #define LV_USE_CALENDAR 0
 #define LV_USE_CANVAS 1   /* required by LV_USE_QRCODE */
 #define LV_USE_CHART 0

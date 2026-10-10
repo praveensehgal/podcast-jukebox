@@ -135,13 +135,8 @@ bool savePosition(const String& episodeId, uint32_t posS, uint32_t durationS) {
     return ok;
 }
 
-String freshUrl(const Episode& e) {
-    JsonDocument doc;
-    if (getJson(baseUrl() + "/resolve?url=" + urlEncode(e.url), doc, nullptr)) {
-        const char* u = doc["data"]["url"];
-        if (u && strlen(u) > 8) return String(u);
-    }
-    return e.url;
+String streamUrl(const Episode& e) {
+    return baseUrl() + "/stream?url=" + urlEncode(e.url);
 }
 
 }  // namespace resolver

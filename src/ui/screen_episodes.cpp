@@ -1,5 +1,4 @@
-// Screen 02: episode list. 4 rows of 71 px: date box left, two-line title, NEW badge
-// or "n% played" / "Played", duration right, thin progress bar on partly played.
+// 02 Episodes: three a page. Date box, two-line title, badge, length, progress bar.
 
 #include "theme.h"
 #include "ui.h"
@@ -7,141 +6,94 @@
 
 namespace ui {
 
-static const int kRows = theme::kEpisodesVisible;
-static const int kRowH = theme::kEpisodeRowH;
+struct EpRow {
+    lv_obj_t* mon;
+    lv_obj_t* day;
+    lv_obj_t* title;
+    lv_obj_t* badge;
+    lv_obj_t* dur;
+    lv_obj_t* prog;
+    lv_obj_t* fill;
+};
 
-static lv_obj_t* scr = nullptr;
-static widgets::Header hdr;
-static widgets::Scrollbar sb;
-static lv_obj_t* rows[kRows];
-static lv_obj_t* dateMon[kRows];
-static lv_obj_t* dateDay[kRows];
-static lv_obj_t* titles[kRows];
-static lv_obj_t* badges[kRows];
-static lv_obj_t* durs[kRows];
-static lv_obj_t* progs[kRows];
-static lv_obj_t* progFill[kRows];
+static widgets::Paged lst;
+static EpRow rows[3];
 static const std::vector<resolver::Episode>* data = nullptr;
-static int selected = 0, first = 0;
+static String playing;
 
-static lv_obj_t* plain(lv_obj_t* parent, const lv_font_t* f, lv_color_t c) {
-    lv_obj_t* l = lv_label_create(parent);
-    lv_obj_set_style_text_font(l, f, 0);
-    lv_obj_set_style_text_color(l, c, 0);
-    return l;
-}
-
-static void makeRow(int i) {
-    lv_obj_t* r = lv_obj_create(scr);
-    lv_obj_remove_style_all(r);
-    lv_obj_set_pos(r, 0, theme::kHeaderH + i * kRowH);
-    lv_obj_set_size(r, 480 - theme::kScrollbarW, kRowH);
-    lv_obj_set_style_bg_opa(r, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_color(r, theme::rowline(), 0);
-    lv_obj_set_style_border_width(r, 1, 0);
-    lv_obj_set_style_border_side(r, LV_BORDER_SIDE_BOTTOM, 0);
-    rows[i] = r;
-
-    lv_obj_t* db = lv_obj_create(r);
-    lv_obj_remove_style_all(db);
-    lv_obj_set_pos(db, 0, 0);
-    lv_obj_set_size(db, 74, kRowH - 1);
+static void make(lv_obj_t* r, int i) {
+    EpRow& e = rows[i];
+    lv_obj_t* db = widgets::box(r, 0, 0, 72, theme::kEpisodeRowH - 1, theme::bg());
+    lv_obj_set_style_bg_opa(db, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_color(db, theme::rowline(), 0);
     lv_obj_set_style_border_width(db, 1, 0);
     lv_obj_set_style_border_side(db, LV_BORDER_SIDE_RIGHT, 0);
-    dateMon[i] = plain(db, theme::fontSmall(), theme::dim());
-    lv_obj_align(dateMon[i], LV_ALIGN_TOP_MID, 0, 12);
-    dateDay[i] = plain(db, theme::fontRow(), theme::text());
-    lv_obj_align(dateDay[i], LV_ALIGN_BOTTOM_MID, 0, -8);
-
-    titles[i] = plain(r, theme::fontHeader(), theme::text());
-    lv_label_set_long_mode(titles[i], LV_LABEL_LONG_WRAP);
-    lv_obj_set_width(titles[i], 380);
-    lv_obj_set_pos(titles[i], 84, 5);
-
-    badges[i] = plain(r, theme::fontSmall(), theme::dim());
-    lv_obj_align(badges[i], LV_ALIGN_BOTTOM_LEFT, 84, -8);
-    durs[i] = plain(r, theme::fontSmall(), theme::dim());
-    lv_obj_align(durs[i], LV_ALIGN_BOTTOM_RIGHT, -10, -8);
-
-    progs[i] = lv_obj_create(r);
-    lv_obj_remove_style_all(progs[i]);
-    lv_obj_set_size(progs[i], 480 - theme::kScrollbarW, 4);
-    lv_obj_align(progs[i], LV_ALIGN_BOTTOM_LEFT, 0, 0);
-    lv_obj_set_style_bg_color(progs[i], theme::track(), 0);
-    lv_obj_set_style_bg_opa(progs[i], LV_OPA_COVER, 0);
-    progFill[i] = lv_obj_create(progs[i]);
-    lv_obj_remove_style_all(progFill[i]);
-    lv_obj_set_size(progFill[i], 0, 4);
-    lv_obj_set_style_bg_color(progFill[i], theme::hilite(), 0);
-    lv_obj_set_style_bg_opa(progFill[i], LV_OPA_COVER, 0);
+    e.mon = widgets::text(db, theme::fontSmall(), theme::dim(), "");
+    lv_obj_align(e.mon, LV_ALIGN_TOP_MID, 0, 16);
+    e.day = widgets::text(db, theme::fontRow(), theme::text(), "");
+    lv_obj_align(e.day, LV_ALIGN_BOTTOM_MID, 0, -16);
+    e.title = widgets::text(r, theme::fontTitle(), theme::text(), "");
+    lv_label_set_long_mode(e.title, LV_LABEL_LONG_DOT);
+    lv_obj_set_size(e.title, 312, 50);
+    lv_obj_set_pos(e.title, 84, 8);
+    e.badge = widgets::text(r, theme::fontSmall(), theme::dim(), "");
+    lv_obj_set_style_pad_hor(e.badge, 7, 0);
+    lv_obj_set_style_pad_ver(e.badge, 1, 0);
+    lv_obj_set_style_radius(e.badge, 4, 0);
+    lv_obj_align(e.badge, LV_ALIGN_BOTTOM_LEFT, 84, -10);
+    e.dur = widgets::text(r, theme::fontSmall(), theme::dim(), "");
+    lv_obj_align(e.dur, LV_ALIGN_BOTTOM_RIGHT, -12, -10);
+    e.prog = widgets::box(r, 0, theme::kEpisodeRowH - 6, theme::kListW, 5, theme::track());
+    e.fill = widgets::box(e.prog, 0, 0, 0, 5, theme::hilite());
 }
 
-static void bind(int i, int index) {
-    lv_obj_t* r = rows[i];
-    if (index >= (int)data->size()) { lv_obj_add_flag(r, LV_OBJ_FLAG_HIDDEN); return; }
-    lv_obj_remove_flag(r, LV_OBJ_FLAG_HIDDEN);
+static void bind(int slot, int index) {
+    EpRow& r = rows[slot];
     const resolver::Episode& e = (*data)[index];
-    bool sel = index == selected;
-    lv_color_t fg = sel ? theme::white() : theme::text();
-    lv_color_t fgDim = sel ? theme::white() : theme::dim();
-    lv_obj_set_style_bg_color(r, sel ? theme::hilite() : theme::bg(), 0);
     int sp = e.date.indexOf(' ');
-    lv_label_set_text(dateMon[i], sp > 0 ? e.date.substring(0, sp).c_str() : "");
-    lv_label_set_text(dateDay[i], sp > 0 ? e.date.substring(sp + 1).c_str() : "");
-    lv_obj_set_style_text_color(dateMon[i], fgDim, 0);
-    lv_obj_set_style_text_color(dateDay[i], fg, 0);
-    lv_label_set_text(titles[i], e.title.c_str());
-    lv_obj_set_style_text_color(titles[i], fg, 0);
+    lv_label_set_text(r.mon, sp > 0 ? e.date.substring(0, sp).c_str() : "");
+    lv_label_set_text(r.day, sp > 0 ? e.date.substring(sp + 1).c_str() : "");
+    lv_label_set_text(r.title, e.title.c_str());
+    bool isPlaying = playing.length() && e.id == playing;
+    uint32_t pct = (e.durationS && e.posS) ? min<uint32_t>(100, e.posS * 100 / e.durationS) : 0;
     char badge[24];
-    uint32_t pct = (e.durationS && e.posS) ? (e.posS * 100 / e.durationS) : 0;
-    if (e.played) strcpy(badge, "Played");
+    bool isNew = !e.posS && !e.played && !isPlaying;
+    if (isPlaying) snprintf(badge, sizeof(badge), "Playing - %u%%", (unsigned)pct);
+    else if (e.played) strcpy(badge, "Played");
     else if (e.posS) snprintf(badge, sizeof(badge), "%u%% played", (unsigned)pct);
     else strcpy(badge, "NEW");
-    lv_label_set_text(badges[i], badge);
-    lv_obj_set_style_text_color(badges[i], (!e.posS && !e.played) ? (sel ? theme::white() : theme::green()) : fgDim, 0);
+    lv_label_set_text(r.badge, badge);
+    lv_obj_set_style_bg_opa(r.badge, isNew ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
+    lv_obj_set_style_bg_color(r.badge, theme::green(), 0);
+    lv_obj_set_style_text_color(r.badge, isNew ? theme::white() : (isPlaying ? theme::hilite() : theme::dim()), 0);
     char dur[16];
     snprintf(dur, sizeof(dur), "%u min", (unsigned)((e.durationS + 30) / 60));
-    lv_label_set_text(durs[i], e.durationS ? dur : "");
-    lv_obj_set_style_text_color(durs[i], fgDim, 0);
+    lv_label_set_text(r.dur, e.durationS ? dur : "");
     bool partial = e.posS && !e.played && e.durationS;
-    partial ? lv_obj_remove_flag(progs[i], LV_OBJ_FLAG_HIDDEN) : lv_obj_add_flag(progs[i], LV_OBJ_FLAG_HIDDEN);
-    if (partial) lv_obj_set_width(progFill[i], (480 - theme::kScrollbarW) * pct / 100);
+    partial ? lv_obj_remove_flag(r.prog, LV_OBJ_FLAG_HIDDEN) : lv_obj_add_flag(r.prog, LV_OBJ_FLAG_HIDDEN);
+    if (partial) lv_obj_set_width(r.fill, theme::kListW * pct / 100);
 }
 
-static void redraw() {
-    for (int i = 0; i < kRows; i++) bind(i, first + i);
-    widgets::scrollbarSet(sb, first, kRows, (int)data->size());
-    widgets::headerCount(hdr, data->empty() ? 0 : selected + 1, (int)data->size());
-}
-
-void episodesShow(const char* channelName, const std::vector<resolver::Episode>& list, int sel) {
+void episodesShow(const char* channelName, const std::vector<resolver::Episode>& list, int page,
+                  const String& playingId, bool isPlaying) {
     data = &list;
-    selected = list.empty() ? 0 : max(0, min(sel, (int)list.size() - 1));
-    first = max(0, min(selected, (int)list.size() - kRows));
-    scr = widgets::screen();
-    hdr = widgets::header(scr, channelName, true);
-    for (int i = 0; i < kRows; i++) makeRow(i);
-    sb = widgets::scrollbar(scr);
+    playing = playingId;
+    lv_obj_t* scr = widgets::screen();
+    widgets::HeaderOpts o;
+    o.back = true;
+    o.playing = isPlaying;
+    widgets::header(scr, channelName, o);
+    lst = widgets::Paged();
+    widgets::paged(lst, scr, 3, theme::kEpisodeRowH, make);
+    lst.bind = bind;
+    widgets::pagedSet(lst, (int)list.size(), page);
     if (list.empty()) {
-        lv_obj_t* l = plain(scr, theme::fontTitle(), theme::dim());
-        lv_label_set_text(l, "No episodes available right now.");
-        lv_obj_align(l, LV_ALIGN_CENTER, 0, 10);
+        lv_obj_t* l = widgets::text(scr, theme::fontTitle(), theme::dim(), "No episodes right now.");
+        lv_obj_align(l, LV_ALIGN_CENTER, -36, 20);
     }
-    redraw();
     widgets::show(scr);
 }
 
-bool episodesHandle(const input::Event& e) {
-    if (e.kind != input::Kind::Scroll || data->empty()) return false;
-    int n = (int)data->size();
-    selected = ((selected + e.value) % n + n) % n;
-    if (selected < first) first = selected;
-    if (selected >= first + kRows) first = selected - kRows + 1;
-    redraw();
-    return true;
-}
-
-int episodesSelected() { return selected; }
+int episodesPage() { return lst.page; }
 
 }  // namespace ui

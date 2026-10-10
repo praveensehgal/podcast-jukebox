@@ -1,20 +1,18 @@
 #pragma once
 #include <Arduino.h>
 
-// Physical controls, decision 001: SCROLL encoder (push = OK), VOLUME pot, and three
-// buttons OK / PAUSE / STOP. Every source (encoder, buttons, pot, and the serial
-// stand-in used until the parts arrive) reduces to this one event stream.
+// One event stream for everything the user does: taps on the screen (pushed by the UI
+// layer), the three buttons on top (play, pause, stop), and serial keys on the bench.
 namespace input {
 
 enum class Kind : uint8_t {
     None,
-    Scroll,    // value = +n / -n detents
-    Ok,
-    Pause,
-    Stop,
-    StopHold,  // STOP held 3 s: Settings
-    Volume,    // value = 0..16
-    BenchPlay, // serial 't': play the bench test episode (dev builds only)
+    Play, Pause, Stop, StopHold,          // top buttons; STOP held 3 s = Settings
+    Pick,                                 // value = index of the tapped list row
+    Back, Gear, NowPlaying,               // header taps
+    VolDown, VolUp, SkipBack, SkipFwd,    // Now Playing taps
+    Join,                                 // keyboard Join
+    BenchPlay,                            // serial 't' on dev builds
 };
 
 struct Event {
@@ -22,14 +20,15 @@ struct Event {
     int16_t value;
 };
 
-// Configure pins (no-ops until the hardware is wired) and the serial stand-in.
+// Top-button pins. They are the microSD socket's lines, which this design leaves unused:
+// CLK 18, DAT0 19, CMD 23. Each four-prong tact switch goes between its pin and GND.
+static const int kPinPlay = 18;
+static const int kPinPause = 19;
+static const int kPinStop = 23;
+
 void begin();
-
-// Poll sources; call from loop(). Returns true and fills `e` when an event is ready.
-bool poll(Event& e);
-
-// Serial stand-in keys (115200): j/k or arrows = scroll, o or Enter = OK, p = pause,
-// s = stop, S = stop-hold, +/- = volume up/down, 0..9 = volume 0..16 (scaled).
-void feedSerialKey(int c);
+bool poll(Event& e);                 // call from loop(); fills `e` when one is ready
+void push(Kind k, int16_t value = 0);
+void feedSerialKey(int c);   // P p s S t b g n - + < > j, 1-8 = list item
 
 }  // namespace input

@@ -1,8 +1,8 @@
 // Podcast Jukebox — firmware entry.
 //
 // Boot: screen on -> Wi-Fi (captive portal on first run) -> update check -> channel
-// list -> UI. The loop pumps LVGL and routes knob/button events (or their serial
-// stand-ins) to the active screen.
+// list -> UI. The loop pumps LVGL and routes touch taps, the three top buttons and
+// their serial stand-ins to the app.
 
 #include <Arduino.h>
 #include <Preferences.h>
@@ -114,7 +114,6 @@ void setup() {
 void loop() {
     input::Event e;
     while (input::poll(e)) app::handle(e);
-    ui::volumeTick();
     audio_out::loop();
     app::loop();
     uint32_t wait = display::tick();

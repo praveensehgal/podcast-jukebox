@@ -30,9 +30,9 @@ bool episodes(const String& feed, std::vector<Episode>& out, int limit = 12);
 // Positions, sent on pause/stop and every 30 s while playing.
 bool savePosition(const String& episodeId, uint32_t posS, uint32_t durationS);
 
-// Ask the resolver for a fresh direct URL (signed CDN links expire). Falls back to
-// the episode's stored url on failure.
-String freshUrl(const Episode& e);
+// Where to play an episode from: the resolver relays the audio over plain HTTP
+// (decision 005). The device cannot afford a TLS session next to the MP3 decoder.
+String streamUrl(const Episode& e);
 
 String deviceId();
 
