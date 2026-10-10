@@ -22,6 +22,11 @@ static bool connectWifi() {
     WiFiManager wm;
     wm.setConfigPortalTimeout(kPortalTimeoutS);
     wm.setConnectTimeout(20);
+    // The portal is an open hotspot for three minutes. Keep it to Wi-Fi setup only:
+    // WiFiManager's default menu includes a firmware-upload page, which must not be
+    // reachable from an unauthenticated AP. Updates come only from signed-off releases.
+    std::vector<const char*> menu = {"wifi", "info", "exit"};
+    wm.setMenu(menu);
     // Uses credentials saved in NVS; opens the "Jukebox-Setup" portal only if they fail.
     bool ok = wm.autoConnect(kSetupSsid);
     if (ok) {
