@@ -12,11 +12,11 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 #include <WiFi.h>
-#include <esp_crt_bundle.h>
 #include <esp_http_client.h>
 #include <esp_ota_ops.h>
 #include <mbedtls/sha256.h>
 
+#include "http_get.h"
 #include "version.h"
 
 namespace ota {
@@ -74,49 +74,11 @@ int compareVersions(const String& a, const String& b) {
     return 0;
 }
 
-// ---------- HTTP helpers ----------
-
-static esp_http_client_handle_t openGet(const String& url) {
-    esp_http_client_config_t cfg = {};
-    cfg.url = url.c_str();
-    cfg.crt_bundle_attach = esp_crt_bundle_attach;
-    cfg.timeout_ms = 15000;
-    cfg.buffer_size = kChunk;
-    cfg.user_agent = FW_NAME "/0";
-    cfg.max_redirection_count = 5;  // GitHub release assets redirect to objects.githubusercontent.com
-    esp_http_client_handle_t c = esp_http_client_init(&cfg);
-    if (!c) return nullptr;
-    if (esp_http_client_open(c, 0) != ESP_OK) {
-        esp_http_client_cleanup(c);
-        return nullptr;
-    }
-    esp_http_client_fetch_headers(c);
-    int status = esp_http_client_get_status_code(c);
-    if (status != 200) {
-        Serial.printf("[ota] GET %s -> HTTP %d\n", url.c_str(), status);
-        esp_http_client_close(c);
-        esp_http_client_cleanup(c);
-        return nullptr;
-    }
-    return c;
-}
-
-static void closeClient(esp_http_client_handle_t c) {
-    if (!c) return;
-    esp_http_client_close(c);
-    esp_http_client_cleanup(c);
-}
-
 // ---------- manifest ----------
 
 static bool fetchManifest(Manifest& m) {
-    esp_http_client_handle_t c = openGet(manifestUrl());
-    if (!c) return false;
     String body;
-    char buf[512];
-    int n;
-    while ((n = esp_http_client_read(c, buf, sizeof(buf))) > 0) body.concat(buf, n);
-    closeClient(c);
+    if (!http_get::text(manifestUrl(), body, 4096)) return false;
 
     JsonDocument doc;
     if (deserializeJson(doc, body)) {
@@ -148,12 +110,12 @@ static Result flashImage(const Manifest& m) {
     if (!part) { Serial.println("[ota] no OTA partition"); return Result::DownloadError; }
     if (m.size && m.size > kMaxImage) { Serial.println("[ota] image too large"); return Result::DownloadError; }
 
-    esp_http_client_handle_t c = openGet(m.url);
+    esp_http_client_handle_t c = http_get::open(m.url, kChunk, 30000);
     if (!c) return Result::DownloadError;
 
     esp_ota_handle_t h = 0;
     if (esp_ota_begin(part, OTA_SIZE_UNKNOWN, &h) != ESP_OK) {
-        closeClient(c);
+        http_get::close(c);
         return Result::DownloadError;
     }
     mbedtls_sha256_context sha;
@@ -172,7 +134,7 @@ static Result flashImage(const Manifest& m) {
         if ((total / kChunk) % 32 == 0) Serial.printf("[ota] %u KB\n", total / 1024);
     }
     free(buf);
-    closeClient(c);
+    http_get::close(c);
 
     unsigned char digest[32];
     mbedtls_sha256_finish(&sha, digest);

@@ -1,0 +1,76 @@
+#include "http_get.h"
+
+#include <esp_crt_bundle.h>
+
+#include "version.h"
+
+namespace http_get {
+
+static const int kMaxRedirects = 5;
+
+static bool isRedirect(int status) {
+    return status == 301 || status == 302 || status == 303 || status == 307 || status == 308;
+}
+
+esp_http_client_handle_t open(const String& url, int bufferSize, int timeoutMs) {
+    esp_http_client_config_t cfg = {};
+    cfg.url = url.c_str();
+    cfg.crt_bundle_attach = esp_crt_bundle_attach;
+    cfg.timeout_ms = timeoutMs;
+    cfg.buffer_size = bufferSize;
+    // GitHub's signed asset URLs run ~800 characters; the default 512-byte TX buffer
+    // cannot hold the request line and fails with "Out of buffer".
+    cfg.buffer_size_tx = 2048;
+    cfg.user_agent = FW_NAME "/0";
+    cfg.disable_auto_redirect = true;  // we do it by hand below
+    esp_http_client_handle_t c = esp_http_client_init(&cfg);
+    if (!c) return nullptr;
+
+    for (int hop = 0; hop <= kMaxRedirects; hop++) {
+        if (esp_http_client_open(c, 0) != ESP_OK) {
+            Serial.printf("[http] open failed (hop %d)\n", hop);
+            break;
+        }
+        if (esp_http_client_fetch_headers(c) < 0) {
+            Serial.printf("[http] no headers (hop %d)\n", hop);
+            break;
+        }
+        int status = esp_http_client_get_status_code(c);
+        if (status == 200) return c;
+        if (!isRedirect(status)) {
+            Serial.printf("[http] HTTP %d for %s\n", status, url.c_str());
+            break;
+        }
+        // Drain the redirect body, then let the client swap in the Location header.
+        char sink[256];
+        while (esp_http_client_read(c, sink, sizeof(sink)) > 0) {}
+        esp_http_client_close(c);
+        if (esp_http_client_set_redirection(c) != ESP_OK) {
+            Serial.println("[http] redirect without a usable Location");
+            break;
+        }
+    }
+    close(c);
+    return nullptr;
+}
+
+void close(esp_http_client_handle_t c) {
+    if (!c) return;
+    esp_http_client_close(c);
+    esp_http_client_cleanup(c);
+}
+
+bool text(const String& url, String& body, size_t maxBytes) {
+    esp_http_client_handle_t c = open(url);
+    if (!c) return false;
+    char buf[512];
+    int n;
+    body = "";
+    while ((n = esp_http_client_read(c, buf, sizeof(buf))) > 0 && body.length() < maxBytes) {
+        body.concat(buf, n);
+    }
+    close(c);
+    return body.length() > 0;
+}
+
+}  // namespace http_get

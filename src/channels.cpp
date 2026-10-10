@@ -7,9 +7,8 @@
 #include <LittleFS.h>
 #include <Preferences.h>
 #include <WiFi.h>
-#include <esp_crt_bundle.h>
-#include <esp_http_client.h>
 
+#include "http_get.h"
 #include "version.h"
 
 namespace channels {
@@ -83,32 +82,7 @@ std::vector<Channel> parse(const String& md) {
 
 static bool fetch(String& body) {
     if (WiFi.status() != WL_CONNECTED) return false;
-    esp_http_client_config_t cfg = {};
-    String url = sourceUrl();
-    cfg.url = url.c_str();
-    cfg.crt_bundle_attach = esp_crt_bundle_attach;
-    cfg.timeout_ms = 15000;
-    cfg.max_redirection_count = 5;
-    cfg.user_agent = FW_NAME "/0";
-    esp_http_client_handle_t c = esp_http_client_init(&cfg);
-    if (!c) return false;
-    bool ok = false;
-    if (esp_http_client_open(c, 0) == ESP_OK) {
-        esp_http_client_fetch_headers(c);
-        int status = esp_http_client_get_status_code(c);
-        if (status == 200) {
-            char buf[512];
-            int n;
-            while ((n = esp_http_client_read(c, buf, sizeof(buf))) > 0 && body.length() < kMaxBytes)
-                body.concat(buf, n);
-            ok = body.length() > 0;
-        } else {
-            Serial.printf("[channels] GET -> HTTP %d\n", status);
-        }
-        esp_http_client_close(c);
-    }
-    esp_http_client_cleanup(c);
-    return ok;
+    return http_get::text(sourceUrl(), body, kMaxBytes);
 }
 
 static String readCache() {

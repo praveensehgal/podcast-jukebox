@@ -31,7 +31,8 @@ echo "Using $port"
 # Guard: only flash a plain ESP32. On 2026-10-10 the autodetect picked the CrowPanel
 # notetaker (ESP32-P4) because the Sunton was not enumerating; esptool refused, but
 # make the refusal explicit and early.
-chip=$(pio pkg exec -p tool-esptoolpy -- esptool.py --port "$port" --connect-attempts 3 chip_id 2>/dev/null | grep -m1 'Chip is' || true)
+esptool="$HOME/.platformio/penv/bin/esptool"   # the binary pio itself uses for upload
+chip=$("$esptool" --port "$port" --connect-attempts 3 chip_id 2>/dev/null | grep -m1 'Chip is' || true)
 echo "${chip:-Chip is (unknown)}"
 if [[ "$chip" != *"Chip is ESP32-D0WD"* && "$chip" != *"Chip is ESP32 "* && "$chip" != *"Chip is ESP32-D0WDQ"* ]]; then
   echo "Refusing: $port is not a plain ESP32 (Sunton 3248S035). Check which board is on this port." >&2
