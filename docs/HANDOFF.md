@@ -3,7 +3,40 @@
 Last updated 2026-10-10. The memory chunk "Podcast Jukebox design 2026-10-10" in Oracle
 points here; this file holds the operational detail.
 
-## State
+## State (2026-10-10 evening, after the screen build)
+
+All seven screens from the mockup are implemented and run on the Sunton. The firmware
+streams real episodes. What is missing is hardware, not software: the encoder, pot
+and buttons are not wired (serial keys stand in), the MAX98357A and speaker are not
+wired (decode proven, sound not yet heard), and the KCX_BT_EMITTER arrives 2026-10-11.
+
+Build stages and what proved them:
+
+| Stage | What | Proof on the bench |
+|---|---|---|
+| A | LovyanGFX + LVGL 9, boot status screen, channel list, serial stand-in input | Screen renders; "open channel 6 Fresh Air" from the serial keys |
+| spike | ESP8266Audio Helix MP3 over HTTPS, persistent I2S | 52 s of NPR News Now decoded with the list on screen, 53 KB heap free |
+| C/D | resolver client, episode list, Now Playing, state machine | 3 consecutive channel → play → back → pause → resume → stop cycles; resume at 2:02 from a saved position |
+| E | Settings, Wi-Fi scan + QR, password strip, Bluetooth, sleep timer | Full tour twice, 12 networks found, no crash |
+
+Pin map as wired in firmware (Sunton free pins are scarce; see `input.cpp`, `audio_out.h`, `bt_emitter.h`):
+
+| Function | GPIO | Note |
+|---|---|---|
+| I2S BCLK / LRCLK / DOUT | 22 / 21 / 16 | 16 is the green LED pin; it flickers with data |
+| KCX_BT_EMITTER RX / TX | 35 (module TX) / 17 (module RX) | 35 is input-only, so the UART driver logs a harmless pull-up error |
+| Encoder A / B / push | 18 / 19 / 23 | planned, SD-card pins, internal pull-ups |
+| OK / PAUSE / STOP buttons | 5 / 33 / 0 | planned; 0 is the boot button |
+| Volume pot | 34 | planned, ADC, input-only |
+| Backlight | 27 | PWM via LovyanGFX |
+| Touch CS | 33 | held high so the XPT2046 stays off the SPI bus |
+
+Serial stand-in keys on a dev build: j/k scroll, o OK, p PAUSE, s STOP, S hold-STOP,
++/- volume, t bench episode.
+
+Resolver: runs on the Mac Studio for the bench (`uv run uvicorn jukebox_resolver.server:app --host 0.0.0.0 --port 8787` from `resolver/`), device default `http://192.168.50.116:8787`, overridable in NVS `ota/resolver`. Moves to EC2 behind HTTPS + token before the device leaves the house.
+
+## State (earlier the same day)
 
 - Design frozen enough to build: 7 screens mocked at native 480 × 320 in
   `docs/screens/podcast-jukebox-screens.html`. Control grammar in decision 001.
