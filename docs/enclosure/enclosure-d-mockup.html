@@ -81,8 +81,8 @@ td.n{font:600 14px 'IBM Plex Mono',monospace}
   <svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
 </button>
 <div class="wrap">
-  <div class="eyebrow anim">Podcast Jukebox · enclosure D · for approval</div>
-  <h1 class="anim" style="--i:1">One piece. One screen. Three buttons.</h1>
+  <div class="eyebrow anim">Podcast Jukebox · enclosure D · the inside · for approval</div>
+  <h1 class="anim" style="--i:1">One wedge. One screen. Three buttons.</h1>
   <p class="lead anim" style="--i:2">A soft-edged wedge with a black glass face, the screen set inside it like an iPod. Play, pause and stop sit flush on the top. The speaker breathes through a micro-perforated back. A recessed plinth lifts it off the table.</p>
 
   <section class="anim" style="--i:3">
@@ -99,17 +99,51 @@ td.n{font:600 14px 'IBM Plex Mono',monospace}
     </div>
   </section>
 
+  <section class="card flat anim" style="--i:4">
+    <div class="ask">
+      <b>Changed on 10 October: 5 mm deeper, and the black face now lifts out.</b>
+      Your speaker is 28.2 mm deep and I had drawn 20. The body goes from 68 to 73 mm deep; width and height stay the same.
+      The shell you have files for is a hollow skin with nothing to hold the parts, so this page now shows what goes inside and how each part is held.
+    </div>
+  </section>
+
   <section class="notes card flat anim" style="--i:4">
-    <div class="note"><b>Black glass face</b><p>The screen sits in a black panel, so the display's own black border disappears and the picture looks edge to edge. Printed in black, the body in a second colour, one print on the H2C.</p></div>
+    <div class="note"><b>Black glass face</b><p>The screen sits in a black panel, so the display's own black border disappears and the picture looks edge to edge. Printed in black as its own part, with the body in a second colour.</p></div>
     <div class="note"><b>Buttons on top</b><p>Pressing down onto a table is steadier than pushing on a leaning face, and the face stays clean. Three small round caps, play, pause, stop, with engraved symbols he can feel.</p></div>
     <div class="note"><b>Speaker out of the back</b><p>The 50 mm driver sits low in the tall back wall, firing through a micro-perforated circle. The USB slot is on the right side and follows the angle of the screen.</p></div>
   </section>
 
   <section class="card anim" style="--i:5">
     <h2>Section through the middle</h2>
-    <p class="sub">The real parts drawn inside at their size: display, board, speaker, button switches. This is the drawing the size comes from.</p>
+    <p class="sub">The parts drawn inside at their size. Orange is new plastic that holds something: the speaker seat, the switch bracket, the posts behind the screen.</p>
     <figure><svg id="section" viewBox="0 0 1000 560" role="img" aria-label="Side section with parts"></svg>
-      <figcaption>Wall 2.4 mm in the final part, 1.2 mm in the quick prototype. Speaker and switches drawn as their bounding envelope.</figcaption></figure>
+      <figcaption>Wall 2.4 mm. Speaker depth measured; magnet diameter and board thickness are still estimates. The bracket's two posts sit either side of the speaker, so they are dashed here.</figcaption></figure>
+  </section>
+
+  <section class="grid2">
+    <div class="card anim" style="--i:5">
+      <h2>Looking in through the front</h2>
+      <p class="sub">With the face plate off, this is what you see and can reach with a screwdriver.</p>
+      <figure><svg id="inside" viewBox="0 0 520 320" role="img" aria-label="Back wall seen from the front with speaker, bracket and amp"></svg></figure>
+    </div>
+    <div class="card anim" style="--i:5">
+      <h2>What holds each part</h2>
+      <p class="sub">Every screw is driven straight in from the open front or from underneath. None shows.</p>
+      <table>
+        <tr><th>Part</th><th>Held by</th></tr>
+        <tr><td>Speaker</td><td>A raised seat around the grille and four M3 screws through the frame's corner holes.</td></tr>
+        <tr><td>Three switches</td><td>One printed bracket with a pocket for each. Wire it on the bench, then two screws fix it under the top.</td></tr>
+        <tr><td>Button caps</td><td>Pressed onto the switch stems from outside, through the holes in the top.</td></tr>
+        <tr><td>Screen board</td><td>Four posts on the back of the black face plate. The plate hooks in at its top edge and takes two screws from underneath.</td></tr>
+        <tr><td>Amp</td><td>Two pegs on the back wall beside the speaker. The other side is kept free for the Bluetooth module.</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="notes card flat anim" style="--i:5">
+    <div class="note"><b>The stems get cut short</b><p>The switches are 15 mm tall and the middle one would sit on the speaker's magnet. Cutting 6 mm off each stem clears it by about 3 mm. A printed block makes all three the same length.</p></div>
+    <div class="note"><b>Closed underneath</b><p>The quick shell was open at the bottom. This one has a floor, so the speaker has a box behind it and sounds fuller.</p></div>
+    <div class="note"><b>Prints on its back</b><p>The body prints lying on its back wall, so the speaker seat and posts point straight up and need no supports. The face plate prints flat, face down.</p></div>
   </section>
 
   <section class="grid2">
@@ -133,12 +167,12 @@ td.n{font:600 14px 'IBM Plex Mono',monospace}
 
   <section class="card flat anim" style="--i:11">
     <div class="ask">
-      <b>Before I cut the STL, four caliper numbers make the fit exact.</b> If you would rather print the look first, I cut it from the nominal values above with an extra millimetre of clearance.
+      <b>Four things from the bench before I cut this.</b> The first is the one the size depends on.
       <ol>
-        <li>The display glass: its width and height, and the gap from the left edge of the board to the left edge of the glass.</li>
-        <li>Total thickness from the front of the glass to the tallest part on the back of the board.</li>
-        <li>The speaker: outer diameter, and depth from the front of its frame to the back of the magnet.</li>
-        <li>The tact switches for the three buttons: total height from the pins' base to the top of the stem.</li>
+        <li>Thickness of the Sunton, from the front of the glass to the tallest part on its back. I drew 9.8 mm; every extra millimetre adds about one to the depth.</li>
+        <li>Diameter of the speaker's magnet. I read about 40 mm off your photo.</li>
+        <li>On the speaker frame: the distance between two neighbouring corner holes, centre to centre, and the hole diameter.</li>
+        <li>A photo of the back of the Sunton lying flat on the cutting mat, taken from straight above, so I can place the four posts.</li>
       </ol>
     </div>
   </section>
@@ -151,15 +185,16 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 // ===================== single source of truth (mm) =====================
 const P = {
-  W: 114, theta: 62, L: 68, T: 36, lip: 7, plinth: 3, plinthInset: 5,
+  W: 114, theta: 62, L: 68, T: 41, lip: 7, plinth: 3, plinthInset: 5,
   wall: 2.4, wallProto: 1.2, bevel: 4,
   r: { back: 12, top: 3, faceLip: 3, bottom: 2 },
-  plate: { insetX: 5.5, insetY: 3.2, r: 4 },
+  plate: { insetX: 4, insetY: 3.2, r: 4, ledge: 2.2 },
   screen: { w: 73.44, h: 48.96 },
   board: { w: 101.5, h: 54.9, pcb: 1.6, glass: 4.2, back: 4.0 },
-  spk: { d: 50, frame: 6, depth: 20, magnetD: 30, cy: 31.5 },
+  // speaker measured 2026-10-10: square frame, 28.2 mm deep. Magnet diameter read off a photo, not yet calipered.
+  spk: { d: 50, flange: 1.5, basket0: 47, basket1: 38, magnetD: 40, magnetT: 13, depth: 28.2, seat: 2, cy: 31.5, holes: 41 },
   grille: { d: 44, hole: 1.6, pitch: 3.2 },
-  btn: { d: 11, proud: 0.8, xFromBack: 19, spacing: 18, sw: 12, swH: 15, board: 1.6, boardW: 16 },
+  btn: { d: 11, proud: 0.8, xFromBack: 21, spacing: 18, sw: 12, swFull: 15, swH: 9, body: 4.3, stem: 3.5, tip: 0.6, shelf: 1.6, legs: 1.0, flangeX: 12 },
   usb: { len: 11.5, h: 5.5, inset: 9 },
 };
 const rad = P.theta * Math.PI / 180, sT = Math.sin(rad), cT = Math.cos(rad);
@@ -198,6 +233,9 @@ function svgPath(pts, rr, X, Y) {
 const A = v2(P.T, P.Hb), nOut = v2(sT, cT), down = v2(cT, -sT);
 const facePt = (along, inward = 0) => add(add(A, mul(down, along)), mul(nOut, -inward));
 
+const spkGeom = () => { const x0 = P.wall + P.spk.seat; return { x0, mx0: x0 + P.spk.depth - P.spk.magnetT, x1: x0 + P.spk.depth }; };
+const frontOpen = { w: P.W - 2 * P.plate.insetX - 2 * 1.6, h: P.L - 2 * P.plate.insetY - 2 * P.plate.ledge };   // hole the face plate covers
+
 // ===================== clearance checks =====================
 function checks() {
   const out = [];
@@ -207,15 +245,19 @@ function checks() {
     const dx = Math.max(a0 - along, 0, along - a1), dy = Math.max(i0 - inward, 0, inward - i1);
     if (dx > 0 || dy > 0) return Math.hypot(dx, dy);
     return -Math.min(along - a0, a1 - along, inward - i0, i1 - inward); };
-  const sx0 = P.wall, cy = P.spk.cy;
-  const spkPts = []; for (let y = cy - P.spk.d / 2; y <= cy + P.spk.d / 2; y += 0.5) spkPts.push(v2(sx0 + P.spk.frame, y)); for (let y = cy - P.spk.magnetD / 2; y <= cy + P.spk.magnetD / 2; y += 0.5) spkPts.push(v2(sx0 + P.spk.depth, y));
-  out.push(['Speaker to back of the board', Math.min(...spkPts.map(behind))]);
-  const swTop = P.Hb - P.wall, swBase = P.Hb + 0.4 - P.btn.swH, brd = swBase - P.btn.board, bx = P.btn.xFromBack;
-  const swPts = []; for (let y = brd; y <= swBase; y += 0.4) swPts.push(v2(bx + P.btn.boardW / 2, y)); for (let y = swBase; y <= swTop; y += 0.4) swPts.push(v2(bx + P.btn.sw / 2, y));
-  out.push(['Button switches to back of the board', Math.min(...swPts.map(behind))]);
-  const xOverlap = (bx - P.btn.boardW / 2) < sx0 + P.spk.depth;
-  out.push(['Button switch board to speaker magnet', xOverlap ? brd - (cy + P.spk.magnetD / 2) : 99]);
-  out.push(['Speaker to the floor', (cy - P.spk.d / 2) - (P.plinth + P.wall)]);
+  const sp = spkGeom(), cy = P.spk.cy, spkPts = [];
+  const col = (x, d) => { for (let y = cy - d / 2; y <= cy + d / 2; y += 0.5) spkPts.push(v2(x, y)); };
+  col(sp.x0 + P.spk.flange, P.spk.d);
+  for (let k = 0; k <= 10; k++) col(sp.x0 + P.spk.flange + (sp.mx0 - sp.x0 - P.spk.flange) * k / 10, P.spk.basket0 + (P.spk.basket1 - P.spk.basket0) * k / 10);
+  col(sp.mx0, P.spk.magnetD); col(sp.x1, P.spk.magnetD);
+  out.push(['Speaker magnet to the back of the screen board', Math.min(...spkPts.map(behind))]);
+  const swBase = P.Hb - P.btn.tip - P.btn.swH, brd = swBase - P.btn.shelf, low = brd - P.btn.legs, bx = P.btn.xFromBack;
+  const swPts = []; for (let y = low; y <= P.Hb - P.wall; y += 0.4) swPts.push(v2(bx + P.btn.sw / 2 + 1.5, y));
+  out.push(['Button switches to the back of the screen board', Math.min(...swPts.map(behind))]);
+  out.push(['Middle switch to the speaker magnet', low - (cy + P.spk.magnetD / 2)]);
+  out.push(['Same, with the stems left uncut', (P.Hb - P.btn.tip - P.btn.swFull - P.btn.shelf - P.btn.legs) - (cy + P.spk.magnetD / 2)]);
+  out.push(['Speaker frame to the floor', (cy - P.spk.d / 2) - (P.plinth + P.wall)]);
+  out.push(['Board through the front opening', Math.min(frontOpen.w - P.board.w, frontOpen.h - P.board.h)]);
   out.push(['Board height along the face', (P.L - 2 * P.wall - P.r.top - P.r.faceLip) - P.board.h]);
   out.push(['Board width inside the walls', (P.W - 2 * P.wall) - P.board.w]);
   const flat0 = P.r.back, flat1 = P.T - P.r.top;
@@ -243,24 +285,44 @@ function drawSection(ck) {
     const a = facePt(along0, from), b = facePt(along1, from), c = facePt(along1, to), d = facePt(along0, to);
     return `<polygon points="${[a, b, c, d].map(p => `${X(p.x)},${Y(p.y)}`).join(' ')}" fill="${col}" opacity="${op}"/>`;
   };
-  const a0 = (P.L - P.board.h) / 2, a1 = a0 + P.board.h;
+  const a0 = (P.L - P.board.h) / 2, a1 = a0 + P.board.h, acc = css('--accent'), edge = css('--shell-edge');
+  // removable face plate: cut it out of the shell, then draw it as its own part
+  const p0 = P.plate.insetY, p1 = P.L - P.plate.insetY;
+  s += band(-0.3, P.wall + 0.3, p0, p1, css('--surface'));
+  s += band(0, P.wall, p0, p1, '#0b0c0e');
+  { const q = [facePt(p0, 0), facePt(p1, 0), facePt(p1, P.wall), facePt(p0, P.wall)];
+    s += `<polygon points="${q.map(p => `${X(p.x)},${Y(p.y)}`).join(' ')}" fill="none" stroke="${acc}" stroke-width="2"/>`; }
   s += band(P.wall, P.wall + P.board.glass, a0, a1, css('--part-screen'));
   s += band(P.wall + P.board.glass, P.wall + P.board.glass + P.board.pcb, a0, a1, css('--part-pcb'));
   s += band(P.wall + P.board.glass + P.board.pcb, P.wall + P.stack, a0 + 8, a1 - 10, css('--part-pcb'), .55);
-  s += band(-0.6, 0, a0 + 3, a1 - 3, '#0b0c0e');
-  const sx0 = P.wall, cy = P.spk.cy;
-  s += `<rect x="${X(sx0)}" y="${Y(cy + P.spk.d / 2)}" width="${P.spk.frame * S}" height="${P.spk.d * S}" fill="${css('--part-spk')}"/>`;
-  s += `<rect x="${X(sx0 + P.spk.frame)}" y="${Y(cy + P.spk.magnetD / 2)}" width="${(P.spk.depth - P.spk.frame) * S}" height="${P.spk.magnetD * S}" rx="6" fill="${css('--part-spk')}" opacity=".8"/>`;
+  s += band(P.wall, P.wall + P.board.glass, a0 + 1.5, a0 + 4.5, acc, .9) + band(P.wall, P.wall + P.board.glass, a1 - 4.5, a1 - 1.5, acc, .9);   // posts on the plate
+  // speaker: seat, flange, basket, magnet
+  const sp = spkGeom(), cy = P.spk.cy, spk = css('--part-spk');
+  for (const z0 of [cy + P.grille.d / 2, cy - P.spk.d / 2 - 1])
+    s += `<rect x="${X(P.wall)}" y="${Y(z0 + (P.spk.d - P.grille.d) / 2 + 1)}" width="${P.spk.seat * S}" height="${((P.spk.d - P.grille.d) / 2 + 1) * S}" fill="${acc}"/>`;
   for (let y = cy - P.grille.d / 2 + 1; y <= cy + P.grille.d / 2 - 1; y += P.grille.pitch)
     s += `<rect x="${X(0)}" y="${Y(y + P.grille.hole / 2)}" width="${P.wall * S}" height="${P.grille.hole * S}" fill="${css('--surface')}"/>`;
-  const bx = P.btn.xFromBack;
-  s += `<rect x="${X(bx - P.btn.boardW / 2)}" y="${Y(ck.swBase)}" width="${P.btn.boardW * S}" height="${P.btn.board * S}" fill="${css('--part-pcb')}"/>`;
-  s += `<rect x="${X(bx - P.btn.sw / 2)}" y="${Y(P.Hb - P.wall)}" width="${P.btn.sw * S}" height="${(P.Hb - P.wall - ck.swBase) * S}" fill="${css('--part-sw')}" opacity=".85"/>`;
-  s += `<rect x="${X(bx - P.btn.d / 2)}" y="${Y(P.Hb + P.btn.proud)}" width="${P.btn.d * S}" height="${(P.btn.proud + P.wall) * S}" rx="3" fill="${css('--line')}"/>`;
+  s += `<rect x="${X(sp.x0)}" y="${Y(cy + P.spk.d / 2)}" width="${P.spk.flange * S}" height="${P.spk.d * S}" fill="${spk}"/>`;
+  s += `<polygon points="${X(sp.x0 + P.spk.flange)},${Y(cy + P.spk.basket0 / 2)} ${X(sp.mx0)},${Y(cy + P.spk.basket1 / 2)} ${X(sp.mx0)},${Y(cy - P.spk.basket1 / 2)} ${X(sp.x0 + P.spk.flange)},${Y(cy - P.spk.basket0 / 2)}" fill="${spk}" opacity=".55"/>`;
+  s += `<rect x="${X(sp.mx0)}" y="${Y(cy + P.spk.magnetD / 2)}" width="${P.spk.magnetT * S}" height="${P.spk.magnetD * S}" rx="4" fill="${spk}"/>`;
+  for (const dy of [-P.spk.holes / 2, P.spk.holes / 2])   // two of the four screws
+    s += `<rect x="${X(P.wall + 0.5)}" y="${Y(cy + dy + 1.5)}" width="${(P.spk.seat + P.spk.flange + 1.6) * S}" height="${3 * S}" rx="2" fill="${css('--line')}"/>`;
+  // switch bracket: an L that screws to two posts on the back wall, either side of the speaker
+  const bx = P.btn.xFromBack, fx = P.btn.flangeX, top = ck.brd + 6.5;
+  s += `<rect x="${X(P.wall + 2.2)}" y="${Y(top)}" width="${(fx - P.wall - 2.2) * S}" height="${(top - ck.brd) * S}" fill="none" stroke="${acc}" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+  s += `<rect x="${X(fx)}" y="${Y(top)}" width="${P.btn.shelf * S}" height="${(top - ck.brd) * S}" fill="${acc}"/>`;
+  s += `<rect x="${X(fx)}" y="${Y(ck.swBase)}" width="${(bx + P.btn.sw / 2 + 1.5 - fx) * S}" height="${P.btn.shelf * S}" fill="${acc}"/>`;
+  s += `<rect x="${X(bx - P.btn.sw / 2)}" y="${Y(ck.swBase + P.btn.body)}" width="${P.btn.sw * S}" height="${P.btn.body * S}" fill="${css('--part-sw')}"/>`;
+  s += `<rect x="${X(bx - P.btn.stem / 2)}" y="${Y(P.Hb - P.btn.tip)}" width="${P.btn.stem * S}" height="${(P.btn.swH - P.btn.body) * S}" fill="${css('--part-sw')}" opacity=".8"/>`;
+  { const capBot = ck.swBase + P.btn.body + 0.9, capTop = P.Hb + P.btn.proud;   // cap presses onto the stem from outside
+    s += `<rect x="${X(bx - P.btn.d / 2 - 0.4)}" y="${Y(P.Hb + 0.2)}" width="${(P.btn.d + 0.8) * S}" height="${(P.wall + 0.4) * S}" fill="${css('--surface')}"/>`;
+    s += `<path d="M ${X(bx - P.btn.d / 2)} ${Y(capBot)} V ${Y(capTop)} H ${X(bx + P.btn.d / 2)} V ${Y(capBot)} H ${X(bx + P.btn.stem / 2 + 0.3)} V ${Y(P.Hb - P.btn.tip + 0.2)} H ${X(bx - P.btn.stem / 2 - 0.3)} V ${Y(capBot)} Z" fill="${css('--line')}"/>`; }
   const lab = (x, y, t, anchor = 'start') => `<text x="${x}" y="${y}" font-family="IBM Plex Mono" font-size="12" fill="${css('--dim')}" text-anchor="${anchor}">${t}</text>`;
   const fc = facePt(P.L / 2, 0);
-  s += lab(X(fc.x) + 14, Y(fc.y), 'black glass face + display');
-  s += lab(X(P.spk.depth + 4), Y(cy - 4), '50 mm speaker');
+  s += lab(X(fc.x) + 14, Y(fc.y) - 8, 'black face plate lifts out,') + lab(X(fc.x) + 14, Y(fc.y) + 8, 'screen board on its back');
+  s += lab(X(0) - 10, Y(cy - P.spk.d / 2 + 2), 'seat + 4 screws', 'end');
+  s += lab(X(sp.mx0 + 1.2), Y(cy) + 4, 'magnet', 'start').replace(css('--dim'), '#fff');
+  s += lab(X(0) - 10, Y(ck.brd + 3), 'switch bracket', 'end');
   s += lab(X(P.T) + 16, Y(P.Hb) - 4, 'play · pause · stop on top');
   s += lab(X(0) - 10, Y(cy), 'perforated back', 'end');
   s += lab(X(P.D / 2), Y(0) + 20, `recessed plinth, ${P.plinth} mm`, 'middle');
@@ -306,16 +368,39 @@ function drawRight() {
 function tables(ck) {
   const t = document.getElementById('checks');
   ck.out.forEach(([name, v]) => { const tr = document.createElement('tr'); const ok = v >= 1;
-    tr.innerHTML = `<td>${name}</td><td class="n">${v >= 99 ? 'no overlap' : v.toFixed(1) + ' mm'}</td><td><span class="${ok ? 'pass' : 'fail'}">${ok ? 'fits' : 'tight'}</span></td>`; t.appendChild(tr); });
+    tr.innerHTML = `<td>${name}</td><td class="n">${v >= 99 ? 'no overlap' : v.toFixed(1) + ' mm'}</td><td><span class="${ok ? 'pass' : 'fail'}">${ok ? 'fits' : v < 0 ? 'clashes' : 'tight'}</span></td>`; t.appendChild(tr); });
   const d = document.getElementById('dims');
   [['Width', `${P.W} mm`], ['Depth', `${P.D.toFixed(1)} mm`], ['Height at the back', `${P.Hb.toFixed(1)} mm`], ['Face angle', `${P.theta}° from the table`],
    ['Face length', `${P.L} mm along the slope`], ['Top land', `${P.T} mm, buttons Ø ${P.btn.d} on ${P.btn.spacing} mm centres`],
-   ['Screen', `${P.screen.w} × ${P.screen.h} mm, centred in the glass`], ['Speaker', `Ø ${P.spk.d} × ${P.spk.depth} mm, grille Ø ${P.grille.d}, ${P.grille.hole} mm holes`],
+   ['Screen', `${P.screen.w} × ${P.screen.h} mm, centred in the glass`], ['Speaker', `${P.spk.d} mm square × ${P.spk.depth} mm deep, grille Ø ${P.grille.d}, ${P.grille.hole} mm holes`],
    ['Wall', `${P.wall} mm final, ${P.wallProto} mm prototype`]].forEach(([k, v]) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${k}</td><td class="n">${v}</td>`; d.appendChild(tr); });
   document.getElementById('sizeTag').textContent = `${P.W} × ${P.D.toFixed(0)} × ${P.Hb.toFixed(0)} mm`;
 }
+function drawInside(ck) {   // looking in through the open front at the back wall; the USB side is on the right
+  const S = 3.7, ox = 44, oy = 286, X = x => ox + (P.W - x) * S, Y = z => oy - z * S, acc = css('--accent'), spk = css('--part-spk'), dim = css('--dim');
+  const R = (x, z, w, h, a) => `<rect x="${X(x + w)}" y="${Y(z + h)}" width="${w * S}" height="${h * S}" ${a}/>`;
+  const txt = (x, z, t, anchor = 'middle', col = dim) => `<text x="${X(x)}" y="${Y(z)}" font-family="IBM Plex Mono" font-size="11.5" fill="${col}" text-anchor="${anchor}">${t}</text>`;
+  const cx = P.W / 2, cy = P.spk.cy;
+  let s = R(0, P.plinth, P.W, P.Hb - P.plinth, `rx="${4 * S}" fill="${css('--shell-fill')}" stroke="${css('--shell-edge')}" stroke-width="2"`);
+  s += R(P.wall, P.plinth + P.wall, P.W - 2 * P.wall, P.Hb - P.plinth - 2 * P.wall, `rx="${2 * S}" fill="${css('--surface')}"`);
+  s += R(cx - 27, cy - 27, 54, 54, `rx="${3 * S}" fill="none" stroke="${acc}" stroke-width="2"`);
+  s += R(cx - 25, cy - 25, 50, 50, `rx="${4 * S}" fill="${spk}" opacity=".5"`);
+  s += `<circle cx="${X(cx)}" cy="${Y(cy)}" r="${P.spk.basket0 / 2 * S}" fill="${spk}" opacity=".55"/><circle cx="${X(cx)}" cy="${Y(cy)}" r="${P.spk.magnetD / 2 * S}" fill="${spk}"/>`;
+  for (const dx of [-1, 1]) for (const dz of [-1, 1]) s += `<circle cx="${X(cx + dx * P.spk.holes / 2)}" cy="${Y(cy + dz * P.spk.holes / 2)}" r="${1.9 * S}" fill="${css('--line')}"/>`;
+  const top = ck.brd + 6.5, half = 37;
+  s += R(cx - half, ck.brd, 2 * half, top - ck.brd, `rx="3" fill="${acc}" opacity=".9"`);
+  for (const dx of [-31, 31]) s += `<circle cx="${X(cx + dx)}" cy="${Y((top + ck.brd) / 2)}" r="${1.9 * S}" fill="${css('--line')}"/>`;
+  for (const k of [-1, 0, 1]) { const x = cx + k * P.btn.spacing;
+    s += R(x - P.btn.sw / 2, ck.swBase, P.btn.sw, P.btn.body, `fill="${css('--part-sw')}"`);
+    s += R(x - P.btn.d / 2, P.Hb - 0.2, P.btn.d, P.btn.proud + 0.2, `rx="2" fill="${css('--line')}"`); }
+  s += R(86, 18, 18, 18, `rx="3" fill="${css('--part-pcb')}"`) + txt(95, 12, 'amp');
+  s += R(8, 16, 20, 30, `rx="3" fill="none" stroke="${dim}" stroke-dasharray="5 4"`) + txt(18, 9, 'Bluetooth');
+  s += txt(cx, cy - 1, 'speaker', 'middle', '#fff');
+  s += txt(P.W - 6, ck.brd - 5, 'switch bracket', 'start') + txt(6, ck.brd - 5, 'USB side', 'end');
+  document.getElementById('inside').innerHTML = s;
+}
 const ck = checks();
-function drawAll() { drawSection(ck); drawFace(); drawTop(); drawRight(); }
+function drawAll() { drawSection(ck); drawInside(ck); drawFace(); drawTop(); drawRight(); }
 drawAll(); tables(ck);
 window.addEventListener('themechange', drawAll);
 

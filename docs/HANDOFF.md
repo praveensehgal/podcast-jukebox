@@ -92,14 +92,25 @@ overridable in NVS `ota/resolver`. It must be restarted after pulling this commi
   and the earlier socket pinout notes, not from a photo of this board; its continuity
   checks (pad 3 to the IO22 wire, pad 6 to the IO21 wire) are what confirm it on the bench.
 - The three physical switches, and whether GPIO 18/19/23 behave with real switches.
-- How the enclosure holds anything. Enclosure D is still the thin look-and-feel shell:
-  grille holes, three button holes, a USB slot. It has no speaker seat, no switch
-  carrier, no posts for the Sunton board and no place for the amp. The caps are plain
-  flanged discs with no socket for the switch stem (the switches are 12 x 12 x 15 mm:
-  body 4.3, round stem 3.5 mm, numbers from ANANDRADIO/cad). Fit is unchecked too: the
-  centre switch with a carrier under it hangs to roughly z 45-50, over the speaker
-  magnet (speaker centre z 31.5). The speaker's depth and magnet diameter are not
-  measured (AnandRadio's lib.scad marks 50 mm and 20 mm as MEASURE).
+- How the enclosure holds anything. The files in enclosure/out are still the thin
+  look-and-feel shell (no speaker seat, no switch holder, no board posts, caps without a
+  stem socket, open underneath). The proposal for the insides is drawn in
+  docs/enclosure/enclosure-d-mockup.html and is waiting for Praveen's approval; no CAD
+  exists for it. What it proposes: body 114 x 73 x 67 (was 68 deep), closed floor, printed
+  on its back; the black face plate becomes a separate lift-out part with the Sunton on
+  four posts behind it (top edge hooks in, two screws from underneath); speaker on a 2 mm
+  raised seat with four M3 screws through its corner holes; three switches in one printed
+  L bracket on two posts either side of the speaker; switch stems cut from 15 to 9 mm
+  total with a printed jig (uncut, the middle switch clashes with the magnet by 2.7 mm);
+  caps press onto the stems from outside; amp on two pegs beside the speaker.
+- The numbers that proposal rests on. Measured 2026-10-10 from Praveen's caliper photo:
+  speaker depth 28.22 mm, square frame with four corner holes (label XLY 4 ohm 3 W).
+  Read off a photo against the cutting mat, not calipered: frame about 50 mm square,
+  holes about 41 mm apart, magnet about 40 mm diameter and 13 mm thick. Still nominal:
+  Sunton stack 9.8 mm (glass 4.2, PCB 1.6, parts 4.0) and its mounting-hole positions;
+  switch body 4.3 mm and stem 3.5 mm (AnandRadio CAD has 3.6 and 5 in another file).
+  With these the magnet clears the board by 2.5 mm; each extra mm of board thickness
+  costs about 1 mm of depth.
 - Joining a network from the on-screen keyboard, and the non-blocking phone-setup portal
   started from the Wi-Fi screen (the boot-time portal was proven; this path is new).
 - That a failed join really leaves the old network's credentials saved.
@@ -116,10 +127,10 @@ overridable in NVS `ota/resolver`. It must be restarted after pulling this commi
 
 1. Solder the MAX98357A and speaker and listen: docs/soldering-guide.html, Job A. DIN goes
    to the ESP32 module's edge pad for IO16 (12th from the antenna on the IO22 side).
-2. Design the enclosure's insides: speaker seat behind the grille, a carrier for the
-   three switches with caps that press onto the stems, posts for the board, a place for
-   the amp. Needs the speaker measured with calipers first (rim diameter, depth, magnet
-   diameter). Mockup first, then a fit-test print, as with the shell.
+2. Enclosure insides: get Praveen's approval of the mockup and four bench numbers (Sunton
+   thickness, magnet diameter, speaker hole spacing and diameter, a straight-on photo of
+   the Sunton's back). Then rebuild enclosure/build_d.py for the two-part body and face
+   plate, print a fit-test first, and record the split as a decision.
 3. Solder the three switches to the module's edge pads for IO18/19/23 (same guide, Job B)
    once the carrier exists, so the harness is cut to length. A breadboard holds the
    switches for an earlier test.
