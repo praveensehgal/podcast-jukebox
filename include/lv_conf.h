@@ -10,6 +10,22 @@
 #define LV_USE_STDLIB_MALLOC LV_STDLIB_BUILTIN
 #define LV_MEM_SIZE (40 * 1024U)
 
+/* Software renderer: only the formats this panel path touches. Each disabled
+ * format drops its blend routines from flash (several KB apiece). */
+#define LV_DRAW_SW_SUPPORT_RGB565 1
+#define LV_DRAW_SW_SUPPORT_RGB565_SWAPPED 0
+#define LV_DRAW_SW_SUPPORT_RGB565A8 0
+#define LV_DRAW_SW_SUPPORT_RGB888 0
+#define LV_DRAW_SW_SUPPORT_XRGB8888 0
+#define LV_DRAW_SW_SUPPORT_ARGB8888 0
+#define LV_DRAW_SW_SUPPORT_ARGB8888_PREMULTIPLIED 0
+#define LV_DRAW_SW_SUPPORT_L8 0
+#define LV_DRAW_SW_SUPPORT_AL88 0
+#define LV_DRAW_SW_SUPPORT_A8 1
+#define LV_DRAW_SW_SUPPORT_I1 0
+#define LV_DRAW_SW_COMPLEX 1
+#define LV_USE_DRAW_SW_ASM LV_DRAW_SW_ASM_NONE
+
 #define LV_DEF_REFR_PERIOD 33
 #define LV_DPI_DEF 166
 

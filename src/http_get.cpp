@@ -12,7 +12,7 @@ static bool isRedirect(int status) {
     return status == 301 || status == 302 || status == 303 || status == 307 || status == 308;
 }
 
-esp_http_client_handle_t open(const String& url, int bufferSize, int timeoutMs) {
+esp_http_client_handle_t open(const String& url, int bufferSize, int timeoutMs, uint32_t rangeStart) {
     esp_http_client_config_t cfg = {};
     cfg.url = url.c_str();
     cfg.crt_bundle_attach = esp_crt_bundle_attach;
@@ -25,6 +25,11 @@ esp_http_client_handle_t open(const String& url, int bufferSize, int timeoutMs) 
     cfg.disable_auto_redirect = true;  // we do it by hand below
     esp_http_client_handle_t c = esp_http_client_init(&cfg);
     if (!c) return nullptr;
+    char range[40];
+    if (rangeStart > 0) {
+        snprintf(range, sizeof(range), "bytes=%u-", (unsigned)rangeStart);
+        esp_http_client_set_header(c, "Range", range);
+    }
 
     for (int hop = 0; hop <= kMaxRedirects; hop++) {
         if (esp_http_client_open(c, 0) != ESP_OK) {
@@ -36,7 +41,7 @@ esp_http_client_handle_t open(const String& url, int bufferSize, int timeoutMs) 
             break;
         }
         int status = esp_http_client_get_status_code(c);
-        if (status == 200) return c;
+        if (status == 200 || (status == 206 && rangeStart > 0)) return c;
         if (!isRedirect(status)) {
             Serial.printf("[http] HTTP %d for %s\n", status, url.c_str());
             break;
@@ -58,6 +63,11 @@ void close(esp_http_client_handle_t c) {
     if (!c) return;
     esp_http_client_close(c);
     esp_http_client_cleanup(c);
+}
+
+uint32_t contentLength(esp_http_client_handle_t c) {
+    int64_t len = esp_http_client_get_content_length(c);
+    return len > 0 ? (uint32_t)len : 0;
 }
 
 bool text(const String& url, String& body, size_t maxBytes) {

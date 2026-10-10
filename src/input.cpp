@@ -36,6 +36,7 @@ void feedSerialKey(int c) {
         case 'p': push(Kind::Pause, 0); return;
         case 's': push(Kind::Stop, 0); return;
         case 'S': push(Kind::StopHold, 0); return;
+        case 't': push(Kind::BenchPlay, 0); return;
         case '+': case '=': volume = min<int16_t>(16, volume + 1); push(Kind::Volume, volume); return;
         case '-': volume = max<int16_t>(0, volume - 1); push(Kind::Volume, volume); return;
         default:

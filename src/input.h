@@ -14,6 +14,7 @@ enum class Kind : uint8_t {
     Stop,
     StopHold,  // STOP held 3 s: Settings
     Volume,    // value = 0..16
+    BenchPlay, // serial 't': play the bench test episode (dev builds only)
 };
 
 struct Event {

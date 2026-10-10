@@ -10,6 +10,7 @@
 #include <WiFiManager.h>
 #include <esp_random.h>
 
+#include "audio_out.h"
 #include "channels.h"
 #include "display.h"
 #include "input.h"
@@ -99,12 +100,21 @@ void setup() {
         ui::bootStatus(r == ota::Result::UpToDate ? "Up to date" : ota::resultName(r));
     }
     loadChannels();
+    audio_out::begin();
     ui::channelsShow(channelList, 0);
     Serial.println("[boot] ready");
 }
 
+// Bench-only: NPR News Now episode of 2026-10-10, 128 kbps MP3 behind three redirects.
+static const char* kBenchUrl =
+    "https://prfx.byspotify.com/e/play.podtrac.com/npr-500005/npr.simplecastaudio.com/"
+    "368f8510-314e-46f1-8d26-5b87ed6ab6eb/episodes/f2a7769f-e321-4bce-b9ee-2682911ae0e0/audio/128/default.mp3";
+
 static void route(const input::Event& e) {
-    if (e.kind == input::Kind::Volume) { ui::volumeFlash(e.value); return; }
+    if (e.kind == input::Kind::Volume) { ui::volumeFlash(e.value); audio_out::setVolume(e.value); return; }
+    if (e.kind == input::Kind::BenchPlay) { audio_out::play(kBenchUrl, 0, 5266737, 280); return; }
+    if (e.kind == input::Kind::Pause) { audio_out::pause(!audio_out::isPaused()); Serial.printf("[app] %s\n", audio_out::isPaused() ? "paused" : "resumed"); return; }
+    if (e.kind == input::Kind::Stop) { audio_out::stop(); Serial.println("[app] stopped"); return; }
     if (ui::channelsHandle(e)) return;
     if (e.kind == input::Kind::Ok && !channelList.empty()) {
         const channels::Channel& c = channelList[ui::channelsSelected()];
@@ -116,6 +126,7 @@ void loop() {
     input::Event e;
     while (input::poll(e)) route(e);
     ui::volumeTick();
+    audio_out::loop();
     uint32_t wait = display::tick();
     delay(min<uint32_t>(wait, 5));
 }

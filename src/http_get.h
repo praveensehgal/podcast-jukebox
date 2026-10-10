@@ -11,9 +11,15 @@
 // here. TLS trust is the ESP-IDF certificate bundle.
 namespace http_get {
 
-// Returns an open client positioned after the headers of a 200 response, or nullptr.
-// The caller reads with esp_http_client_read() and must call close() afterwards.
-esp_http_client_handle_t open(const String& url, int bufferSize = 2048, int timeoutMs = 15000);
+// Returns an open client positioned after the headers of a 200 (or 206 when a
+// byte range was requested) response, or nullptr. The caller reads with
+// esp_http_client_read() and must call close() afterwards. `rangeStart` > 0 sends
+// "Range: bytes=N-" so playback can resume mid-episode.
+esp_http_client_handle_t open(const String& url, int bufferSize = 2048, int timeoutMs = 15000,
+                              uint32_t rangeStart = 0);
+
+// Content-Length of the open response, 0 if unknown.
+uint32_t contentLength(esp_http_client_handle_t c);
 
 void close(esp_http_client_handle_t c);
 
