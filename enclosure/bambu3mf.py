@@ -8,7 +8,7 @@ filament presets and only takes geometry + per-part extruder from this file.
 """
 import uuid
 import zipfile
-from datetime import date
+from datetime import datetime, timezone
 
 import numpy as np
 
@@ -60,7 +60,7 @@ def write_bambu_3mf(path, name, parts, bed_center=(175.0, 160.0)):
         f'xmlns:p="{P_NS}" requiredextensions="p">\n'
         ' <metadata name="Application">BambuStudio-02.06.00.51</metadata>\n'
         ' <metadata name="BambuStudio:3mfVersion">1</metadata>\n'
-        f' <metadata name="CreationDate">{date.today()}</metadata>\n'
+        f' <metadata name="CreationDate">{datetime.now(timezone.utc).date()}</metadata>\n'
         f' <metadata name="Title">{name}</metadata>\n'
         ' <resources>\n' + "".join(objs) +
         f'  <object id="{comp_id}" p:UUID="{uuid.uuid4()}" type="model">\n   <components>\n'

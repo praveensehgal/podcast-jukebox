@@ -29,10 +29,10 @@ WALL = 1.2                 # prototype; final part 2.4
 EDGE = 4.0                 # radius on every outside edge
 R = [2.0, 2.0, 3.0, 3.0, 12.0]   # profile corners: back-bottom, chin-bottom, face-bottom, face-top, back-top
 WINDOW = (74.5, 50.0)      # active area 73.44 x 48.96 plus 1 mm (display position not yet measured)
-PLATE = dict(x0=5.5, b0=4.0, b1=L - 5.0, r=4.0, depth=0.6)
-GRILLE = dict(d=44.0, hole=1.6, pitch=3.2, cz=31.5)
-BTN = dict(d=11.0, hole=11.8, y=19.0, spacing=18.0, proud=0.8, flange=14.0, flange_h=0.8)
-USB = dict(len=12.5, h=6.5, b=L / 2, inset=9.0)   # 11.5 x 5.5 plus 1 mm
+PLATE = {"x0": 5.5, "b0": 4.0, "b1": L - 5.0, "r": 4.0, "depth": 0.6}
+GRILLE = {"d": 44.0, "hole": 1.6, "pitch": 3.2, "cz": 31.5}
+BTN = {"d": 11.0, "hole": 11.8, "y": 19.0, "spacing": 18.0, "proud": 0.8, "flange": 14.0, "flange_h": 0.8}
+USB = {"len": 12.5, "h": 6.5, "b": L / 2, "inset": 9.0}   # 11.5 x 5.5 plus 1 mm
 SEG = 32
 
 th = math.radians(THETA)
@@ -189,8 +189,7 @@ def main() -> int:
     overlap = (shell ^ plate).volume()
     print(f"plate/shell overlap {overlap:.3f} mm3 (should be ~0)")
 
-    up_shell, up_plate = to_trimesh(shell), to_trimesh(plate)
-    up_shell.export(OUT / "enclosure_d_upright_preview.stl")
+    to_trimesh(shell).export(OUT / "enclosure_d_upright_preview.stl")
 
     fs, fp = face_down(shell), face_down(plate)
     zmin = min(fs.bounding_box()[2], fp.bounding_box()[2])
