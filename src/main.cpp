@@ -17,6 +17,7 @@
 
 static const char* kSetupSsid = "Jukebox-Setup";
 static const uint32_t kPortalTimeoutS = 180;
+static const int kBacklightPin = 27;  // Sunton ESP32-3248S035: TFT backlight, active high
 
 // Per-device key for the setup hotspot. WiFiManager registers its /update
 // firmware-upload route unconditionally, so the hotspot must not be open. The key is
@@ -64,6 +65,9 @@ static bool connectWifi() {
 }
 
 void setup() {
+    // Backlight on first, so a flashed board is visibly alive even before the UI exists.
+    pinMode(kBacklightPin, OUTPUT);
+    digitalWrite(kBacklightPin, HIGH);
     Serial.begin(115200);
     delay(200);
     Serial.printf("\n%s %s  (built %s %s)\n", FW_NAME, fwVersion(), __DATE__, __TIME__);
