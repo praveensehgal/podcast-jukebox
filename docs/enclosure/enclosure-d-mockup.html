@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jukebox Enclosure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root, [data-theme="light"] {
+  --bg:#f5f5f7; --surface:#ffffff; --surface-2:#f0f0f2; --text:#1d1d1f; --dim:#6e6e73; --border:rgba(0,0,0,.08);
+  --accent:#b5431b; --accent-dim:rgba(181,67,27,.09); --ok:#1f7a4d; --ok-dim:rgba(31,122,77,.10); --bad:#c0392b; --bad-dim:rgba(192,57,43,.10);
+  --line:#1d1d1f; --part-screen:#16213a; --part-pcb:#2f6b47; --part-spk:#5a5a5e; --part-sw:#b5431b; --shell-fill:#e7e7ea; --shell-edge:#8e8e93;
+  --shadow:0 12px 40px rgba(0,0,0,.08);
+}
+[data-theme="dark"] {
+  --bg:#0b0b0c; --surface:#161618; --surface-2:#1f1f22; --text:#f5f5f7; --dim:#a1a1a6; --border:rgba(255,255,255,.09);
+  --accent:#e2693a; --accent-dim:rgba(226,105,58,.14); --ok:#4cc38a; --ok-dim:rgba(76,195,138,.12); --bad:#ff6b5e; --bad-dim:rgba(255,107,94,.12);
+  --line:#f5f5f7; --shell-fill:#2a2a2e; --shell-edge:#8e8e93; --shadow:0 12px 40px rgba(0,0,0,.5);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#0b0b0c; --surface:#161618; --surface-2:#1f1f22; --text:#f5f5f7; --dim:#a1a1a6; --border:rgba(255,255,255,.09);
+  --accent:#e2693a; --accent-dim:rgba(226,105,58,.14); --ok:#4cc38a; --ok-dim:rgba(76,195,138,.12); --bad:#ff6b5e; --bad-dim:rgba(255,107,94,.12);
+  --line:#f5f5f7; --shell-fill:#2a2a2e; --shell-edge:#8e8e93; --shadow:0 12px 40px rgba(0,0,0,.5);
+}}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Instrument Sans',system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1160px;margin:0 auto;padding:56px 24px 96px}
+.eyebrow{font:500 12px 'IBM Plex Mono',monospace;letter-spacing:1.6px;text-transform:uppercase;color:var(--accent);text-align:center}
+h1{font-size:56px;font-weight:700;letter-spacing:-1.4px;line-height:1.02;margin:10px 0 12px;text-align:center}
+.lead{font-size:20px;color:var(--dim);max-width:720px;margin:0 auto 28px;text-align:center}
+h2{font-size:26px;font-weight:700;letter-spacing:-.4px;margin:0 0 6px}
+.sub{color:var(--dim);font-size:15px;margin:0 0 16px}
+section{margin:0 0 28px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:26px 28px;box-shadow:var(--shadow)}
+.card.flat{box-shadow:none}
+.stage{position:relative;background:radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #ececf0 70%);border-radius:22px;overflow:hidden;border:1px solid var(--border)}
+[data-theme="dark"] .stage{background:radial-gradient(120% 90% at 50% 0%, #2a2a2e 0%, #121214 70%)}
+#three{width:100%;height:560px;display:block;cursor:grab}
+#three:active{cursor:grabbing}
+.controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;padding:14px 16px;border-top:1px solid var(--border);background:color-mix(in srgb,var(--surface) 85%,transparent)}
+.seg{display:inline-flex;flex-wrap:wrap;gap:4px;background:var(--surface-2);padding:4px;border-radius:999px}
+.seg button{border:0;background:transparent;color:var(--dim);font:500 13px 'Instrument Sans',sans-serif;padding:7px 14px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.dot{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.2);display:inline-block}
+.hint{position:absolute;top:14px;left:16px;font:500 12px 'IBM Plex Mono',monospace;color:var(--dim)}
+.size{position:absolute;top:14px;right:16px;font:600 13px 'IBM Plex Mono',monospace;color:var(--text);background:var(--surface);border:1px solid var(--border);padding:5px 10px;border-radius:999px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;align-items:start}
+figure{margin:0}figure svg{width:100%;height:auto;display:block}
+figcaption{font:500 12px 'IBM Plex Mono',monospace;color:var(--dim);margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th{font:600 11px 'IBM Plex Mono',monospace;letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:0}
+td.n{font:600 14px 'IBM Plex Mono',monospace}
+.pass{color:var(--ok);background:var(--ok-dim);font:600 12px 'IBM Plex Mono',monospace;padding:2px 8px;border-radius:999px}
+.fail{color:var(--bad);background:var(--bad-dim);font:600 12px 'IBM Plex Mono',monospace;padding:2px 8px;border-radius:999px}
+.notes{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.note b{display:block;font-size:17px;margin-bottom:4px}
+.note p{margin:0;color:var(--dim);font-size:15px}
+.ask{border-left:4px solid var(--accent);background:var(--accent-dim);border-radius:0 14px 14px 0;padding:16px 20px}
+.ask ol{margin:8px 0 0;padding-left:20px}.ask li{margin:4px 0}
+.anim{opacity:0;animation:up .6s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*.07s)}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.anim{animation:none;opacity:1}}
+@media(max-width:900px){.grid2,.grid3,.notes{grid-template-columns:1fr}h1{font-size:38px}.wrap{padding:28px 16px 60px}#three{height:420px}}
+.theme{position:fixed;top:18px;right:18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px;cursor:pointer;color:var(--text);z-index:5}
+[data-theme="light"] .moon,[data-theme="dark"] .sun{display:none}
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<button class="theme" onclick="var r=document.documentElement;r.setAttribute('data-theme',r.getAttribute('data-theme')==='dark'?'light':'dark');window.dispatchEvent(new Event('themechange'))" aria-label="Toggle theme">
+  <svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+  <svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+</button>
+<div class="wrap">
+  <div class="eyebrow anim">Podcast Jukebox · enclosure D · for approval</div>
+  <h1 class="anim" style="--i:1">One piece. One screen. Three buttons.</h1>
+  <p class="lead anim" style="--i:2">A soft-edged wedge with a black glass face, the screen set inside it like an iPod. Play, pause and stop sit flush on the top. The speaker breathes through a micro-perforated back. A recessed plinth lifts it off the table.</p>
+
+  <section class="anim" style="--i:3">
+    <div class="stage">
+      <canvas id="three"></canvas>
+      <div class="hint">drag to turn · scroll to zoom</div>
+      <div class="size" id="sizeTag"></div>
+      <div class="controls">
+        <div class="seg" id="finish"></div>
+        <div class="seg" id="views">
+          <button data-v="hero" class="on">¾ front</button><button data-v="side">Side</button><button data-v="back">Back</button><button data-v="top">Top</button><button data-v="usb">USB side</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="notes card flat anim" style="--i:4">
+    <div class="note"><b>Black glass face</b><p>The screen sits in a black panel, so the display's own black border disappears and the picture looks edge to edge. Printed in black, the body in a second colour, one print on the H2C.</p></div>
+    <div class="note"><b>Buttons on top</b><p>Pressing down onto a table is steadier than pushing on a leaning face, and the face stays clean. Three small round caps, play, pause, stop, with engraved symbols he can feel.</p></div>
+    <div class="note"><b>Speaker out of the back</b><p>The 50 mm driver sits low in the tall back wall, firing through a micro-perforated circle. The USB slot is on the right side and follows the angle of the screen.</p></div>
+  </section>
+
+  <section class="card anim" style="--i:5">
+    <h2>Section through the middle</h2>
+    <p class="sub">The real parts drawn inside at their size: display, board, speaker, button switches. This is the drawing the size comes from.</p>
+    <figure><svg id="section" viewBox="0 0 1000 560" role="img" aria-label="Side section with parts"></svg>
+      <figcaption>Wall 2.4 mm in the final part, 1.2 mm in the quick prototype. Speaker and switches drawn as their bounding envelope.</figcaption></figure>
+  </section>
+
+  <section class="grid2">
+    <div class="card anim" style="--i:6">
+      <h2>Does it fit</h2>
+      <p class="sub">Computed from the numbers, not eyeballed. Anything under 1 mm turns red.</p>
+      <table id="checks"><tr><th>Check</th><th>Clearance</th><th></th></tr></table>
+    </div>
+    <div class="card anim" style="--i:7">
+      <h2>Size</h2>
+      <p class="sub">Outer dimensions and the angle.</p>
+      <table id="dims"><tr><th>Item</th><th>Value</th></tr></table>
+    </div>
+  </section>
+
+  <section class="grid3">
+    <div class="card anim" style="--i:8"><h2>Face</h2><p class="sub">True shape of the slope.</p><figure><svg id="face" viewBox="0 0 420 300"></svg></figure></div>
+    <div class="card anim" style="--i:9"><h2>Top</h2><p class="sub">Buttons on the flat land.</p><figure><svg id="topv" viewBox="0 0 420 300"></svg></figure></div>
+    <div class="card anim" style="--i:10"><h2>Right side</h2><p class="sub">USB slot, parallel to the screen.</p><figure><svg id="right" viewBox="0 0 420 300"></svg></figure></div>
+  </section>
+
+  <section class="card flat anim" style="--i:11">
+    <div class="ask">
+      <b>Before I cut the STL, four caliper numbers make the fit exact.</b> If you would rather print the look first, I cut it from the nominal values above with an extra millimetre of clearance.
+      <ol>
+        <li>The display glass: its width and height, and the gap from the left edge of the board to the left edge of the glass.</li>
+        <li>Total thickness from the front of the glass to the tallest part on the back of the board.</li>
+        <li>The speaker: outer diameter, and depth from the front of its frame to the back of the magnet.</li>
+        <li>The tact switches for the three buttons: total height from the pins' base to the top of the stem.</li>
+      </ol>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+// ===================== single source of truth (mm) =====================
+const P = {
+  W: 114, theta: 62, L: 68, T: 36, lip: 7, plinth: 3, plinthInset: 5,
+  wall: 2.4, wallProto: 1.2, bevel: 4,
+  r: { back: 12, top: 3, faceLip: 3, bottom: 2 },
+  plate: { insetX: 5.5, insetY: 3.2, r: 4 },
+  screen: { w: 73.44, h: 48.96 },
+  board: { w: 101.5, h: 54.9, pcb: 1.6, glass: 4.2, back: 4.0 },
+  spk: { d: 50, frame: 6, depth: 20, magnetD: 30, cy: 31.5 },
+  grille: { d: 44, hole: 1.6, pitch: 3.2 },
+  btn: { d: 11, proud: 0.8, xFromBack: 19, spacing: 18, sw: 12, swH: 15, board: 1.6, boardW: 16 },
+  usb: { len: 11.5, h: 5.5, inset: 9 },
+};
+const rad = P.theta * Math.PI / 180, sT = Math.sin(rad), cT = Math.cos(rad);
+P.Hb = P.lip + P.L * sT;
+P.D = P.T + P.L * cT;
+P.stack = P.board.glass + P.board.pcb + P.board.back;
+
+// ===================== geometry helpers =====================
+const v2 = (x, y) => ({ x, y });
+const sub = (a, b) => v2(a.x - b.x, a.y - b.y), add = (a, b) => v2(a.x + b.x, a.y + b.y), mul = (a, k) => v2(a.x * k, a.y * k);
+const len = a => Math.hypot(a.x, a.y), nrm = a => mul(a, 1 / len(a)), dot = (a, b) => a.x * b.x + a.y * b.y;
+function profile() {   // (depth, height), CCW
+  return [v2(0, P.plinth), v2(P.D, P.plinth), v2(P.D, P.lip), v2(P.T, P.Hb), v2(0, P.Hb)];
+}
+const radii = () => [P.r.bottom, P.r.bottom, P.r.faceLip, P.r.top, P.r.back];
+function inset(pts, d) {
+  const n = pts.length, lines = [];
+  for (let i = 0; i < n; i++) { const p = pts[i], q = pts[(i + 1) % n], e = nrm(sub(q, p)); lines.push({ p: add(p, mul(v2(-e.y, e.x), d)), e }); }
+  return pts.map((_, i) => { const a = lines[(i - 1 + n) % n], b = lines[i];
+    const den = a.e.x * b.e.y - a.e.y * b.e.x, w = sub(b.p, a.p), s = (w.x * b.e.y - w.y * b.e.x) / den; return add(a.p, mul(a.e, s)); });
+}
+function corners(pts, rr) {
+  const n = pts.length;
+  return pts.map((p, i) => { const prev = pts[(i - 1 + n) % n], next = pts[(i + 1) % n];
+    const a = nrm(sub(prev, p)), b = nrm(sub(next, p)), phi = Math.acos(Math.max(-1, Math.min(1, dot(a, b))));
+    let t = rr[i] / Math.tan(phi / 2); t = Math.min(t, 0.45 * len(sub(prev, p)), 0.45 * len(sub(next, p)));
+    return { s: add(p, mul(a, t)), e: add(p, mul(b, t)), p }; });
+}
+function svgPath(pts, rr, X, Y) {
+  const c = corners(pts, rr); let d = `M ${X(c[0].e.x)} ${Y(c[0].e.y)}`;
+  for (let k = 1; k <= c.length; k++) { const q = c[k % c.length]; d += ` L ${X(q.s.x)} ${Y(q.s.y)} Q ${X(q.p.x)} ${Y(q.p.y)} ${X(q.e.x)} ${Y(q.e.y)}`; }
+  return d + ' Z';
+}
+// face frame in profile coords: A = top-front edge, B = face bottom, n = outward normal
+const A = v2(P.T, P.Hb), nOut = v2(sT, cT), down = v2(cT, -sT);
+const facePt = (along, inward = 0) => add(add(A, mul(down, along)), mul(nOut, -inward));
+
+// ===================== clearance checks =====================
+function checks() {
+  const out = [];
+  // distance from a point to the board stack, a rectangle in (along-slope, inward) coordinates
+  const a0 = (P.L - P.board.h) / 2, a1 = a0 + P.board.h, i0 = P.wall, i1 = P.wall + P.stack;
+  const behind = pt => { const r = sub(pt, A), along = dot(r, down), inward = -dot(r, nOut);
+    const dx = Math.max(a0 - along, 0, along - a1), dy = Math.max(i0 - inward, 0, inward - i1);
+    if (dx > 0 || dy > 0) return Math.hypot(dx, dy);
+    return -Math.min(along - a0, a1 - along, inward - i0, i1 - inward); };
+  const sx0 = P.wall, cy = P.spk.cy;
+  const spkPts = []; for (let y = cy - P.spk.d / 2; y <= cy + P.spk.d / 2; y += 0.5) spkPts.push(v2(sx0 + P.spk.frame, y)); for (let y = cy - P.spk.magnetD / 2; y <= cy + P.spk.magnetD / 2; y += 0.5) spkPts.push(v2(sx0 + P.spk.depth, y));
+  out.push(['Speaker to back of the board', Math.min(...spkPts.map(behind))]);
+  const swTop = P.Hb - P.wall, swBase = P.Hb + 0.4 - P.btn.swH, brd = swBase - P.btn.board, bx = P.btn.xFromBack;
+  const swPts = []; for (let y = brd; y <= swBase; y += 0.4) swPts.push(v2(bx + P.btn.boardW / 2, y)); for (let y = swBase; y <= swTop; y += 0.4) swPts.push(v2(bx + P.btn.sw / 2, y));
+  out.push(['Button switches to back of the board', Math.min(...swPts.map(behind))]);
+  const xOverlap = (bx - P.btn.boardW / 2) < sx0 + P.spk.depth;
+  out.push(['Button switch board to speaker magnet', xOverlap ? brd - (cy + P.spk.magnetD / 2) : 99]);
+  out.push(['Speaker to the floor', (cy - P.spk.d / 2) - (P.plinth + P.wall)]);
+  out.push(['Board height along the face', (P.L - 2 * P.wall - P.r.top - P.r.faceLip) - P.board.h]);
+  out.push(['Board width inside the walls', (P.W - 2 * P.wall) - P.board.w]);
+  const flat0 = P.r.back, flat1 = P.T - P.r.top;
+  out.push(['Button caps on the flat top', Math.min(bx - P.btn.d / 2 - flat0, flat1 - (bx + P.btn.d / 2))]);
+  return { out, swBase, brd };
+}
+
+// ===================== SVG drawings =====================
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function dimLine(x1, y1, x2, y2, label, vertical = false) {
+  const c = css('--dim');
+  const t = vertical ? `<text x="${x1 + 8}" y="${(y1 + y2) / 2 + 4}" font-family="IBM Plex Mono" font-size="12" fill="${c}">${label}</text>`
+                     : `<text x="${(x1 + x2) / 2}" y="${y1 - 7}" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" fill="${c}">${label}</text>`;
+  const ticks = vertical ? `<line x1="${x1 - 5}" y1="${y1}" x2="${x1 + 5}" y2="${y1}"/><line x1="${x1 - 5}" y1="${y2}" x2="${x1 + 5}" y2="${y2}"/>`
+                         : `<line x1="${x1}" y1="${y1 - 5}" x2="${x1}" y2="${y1 + 5}"/><line x1="${x2}" y1="${y1 - 5}" x2="${x2}" y2="${y1 + 5}"/>`;
+  return `<g stroke="${c}" stroke-width="1.2"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>${ticks}</g>${t}`;
+}
+function drawSection(ck) {
+  const S = 5.4, ox = 300, oy = 470, X = z => ox + z * S, Y = y => oy - y * S;
+  const pr = profile(), inner = inset(pr, P.wall);
+  let s = `<path d="${svgPath(pr, radii(), X, Y)}" fill="${css('--shell-fill')}" stroke="${css('--shell-edge')}" stroke-width="2.5"/>`;
+  s += `<path d="${svgPath(inner, radii().map(r => Math.max(0.6, r - P.wall)), X, Y)}" fill="${css('--surface')}" stroke="${css('--shell-edge')}" stroke-width="1" stroke-dasharray="4 3"/>`;
+  s += `<rect x="${X(P.plinthInset)}" y="${Y(P.plinth)}" width="${(P.D - 2 * P.plinthInset) * S}" height="${P.plinth * S}" fill="${css('--shell-edge')}"/>`;
+  const band = (from, to, along0, along1, col, op = 1) => {
+    const a = facePt(along0, from), b = facePt(along1, from), c = facePt(along1, to), d = facePt(along0, to);
+    return `<polygon points="${[a, b, c, d].map(p => `${X(p.x)},${Y(p.y)}`).join(' ')}" fill="${col}" opacity="${op}"/>`;
+  };
+  const a0 = (P.L - P.board.h) / 2, a1 = a0 + P.board.h;
+  s += band(P.wall, P.wall + P.board.glass, a0, a1, css('--part-screen'));
+  s += band(P.wall + P.board.glass, P.wall + P.board.glass + P.board.pcb, a0, a1, css('--part-pcb'));
+  s += band(P.wall + P.board.glass + P.board.pcb, P.wall + P.stack, a0 + 8, a1 - 10, css('--part-pcb'), .55);
+  s += band(-0.6, 0, a0 + 3, a1 - 3, '#0b0c0e');
+  const sx0 = P.wall, cy = P.spk.cy;
+  s += `<rect x="${X(sx0)}" y="${Y(cy + P.spk.d / 2)}" width="${P.spk.frame * S}" height="${P.spk.d * S}" fill="${css('--part-spk')}"/>`;
+  s += `<rect x="${X(sx0 + P.spk.frame)}" y="${Y(cy + P.spk.magnetD / 2)}" width="${(P.spk.depth - P.spk.frame) * S}" height="${P.spk.magnetD * S}" rx="6" fill="${css('--part-spk')}" opacity=".8"/>`;
+  for (let y = cy - P.grille.d / 2 + 1; y <= cy + P.grille.d / 2 - 1; y += P.grille.pitch)
+    s += `<rect x="${X(0)}" y="${Y(y + P.grille.hole / 2)}" width="${P.wall * S}" height="${P.grille.hole * S}" fill="${css('--surface')}"/>`;
+  const bx = P.btn.xFromBack;
+  s += `<rect x="${X(bx - P.btn.boardW / 2)}" y="${Y(ck.swBase)}" width="${P.btn.boardW * S}" height="${P.btn.board * S}" fill="${css('--part-pcb')}"/>`;
+  s += `<rect x="${X(bx - P.btn.sw / 2)}" y="${Y(P.Hb - P.wall)}" width="${P.btn.sw * S}" height="${(P.Hb - P.wall - ck.swBase) * S}" fill="${css('--part-sw')}" opacity=".85"/>`;
+  s += `<rect x="${X(bx - P.btn.d / 2)}" y="${Y(P.Hb + P.btn.proud)}" width="${P.btn.d * S}" height="${(P.btn.proud + P.wall) * S}" rx="3" fill="${css('--line')}"/>`;
+  const lab = (x, y, t, anchor = 'start') => `<text x="${x}" y="${y}" font-family="IBM Plex Mono" font-size="12" fill="${css('--dim')}" text-anchor="${anchor}">${t}</text>`;
+  const fc = facePt(P.L / 2, 0);
+  s += lab(X(fc.x) + 14, Y(fc.y), 'black glass face + display');
+  s += lab(X(P.spk.depth + 4), Y(cy - 4), '50 mm speaker');
+  s += lab(X(P.T) + 16, Y(P.Hb) - 4, 'play · pause · stop on top');
+  s += lab(X(0) - 10, Y(cy), 'perforated back', 'end');
+  s += lab(X(P.D / 2), Y(0) + 20, `recessed plinth, ${P.plinth} mm`, 'middle');
+  s += dimLine(X(0), Y(0) + 50, X(P.D), Y(0) + 50, `${P.D.toFixed(0)} mm deep`);
+  s += dimLine(X(0) - 210, Y(P.Hb), X(0) - 210, Y(0), `${P.Hb.toFixed(0)} mm`, true);
+  s += dimLine(X(0), Y(P.Hb) - 40, X(P.T), Y(P.Hb) - 40, `${P.T} mm top`);
+  s += `<text x="${X(P.D) + 10}" y="${Y(P.lip + 14)}" font-family="IBM Plex Mono" font-size="14" font-weight="600" fill="${css('--accent')}">${P.theta}°</text>`;
+  document.getElementById('section').innerHTML = s;
+}
+function drawFace() {
+  const S = 3.0, w = P.W, h = P.L, ox = (420 - w * S) / 2 - 12, oy = 24, X = x => ox + x * S, Y = y => oy + y * S;
+  let s = `<rect x="${X(0)}" y="${Y(0)}" width="${w * S}" height="${h * S}" rx="${P.bevel * S}" fill="${css('--shell-fill')}" stroke="${css('--shell-edge')}" stroke-width="2"/>`;
+  s += `<rect x="${X(P.plate.insetX)}" y="${Y(P.plate.insetY)}" width="${(w - 2 * P.plate.insetX) * S}" height="${(h - 2 * P.plate.insetY) * S}" rx="${P.plate.r * S}" fill="#0b0c0e"/>`;
+  s += `<rect x="${X((w - P.screen.w) / 2)}" y="${Y((h - P.screen.h) / 2)}" width="${P.screen.w * S}" height="${P.screen.h * S}" fill="#f7f5ef"/>`;
+  s += `<rect x="${X((w - P.screen.w) / 2)}" y="${Y((h - P.screen.h) / 2)}" width="${P.screen.w * S}" height="${5.5 * S}" fill="#16213a"/>`;
+  s += dimLine(X(0), Y(h) + 26, X(w), Y(h) + 26, `${w} mm`);
+  s += dimLine(X(w) + 14, Y(0), X(w) + 14, Y(h), `${h}`, true);
+  document.getElementById('face').innerHTML = s;
+}
+function drawTop() {
+  const S = 2.9, ox = (420 - P.W * S) / 2 - 12, oy = 30, X = x => ox + x * S, Y = z => oy + z * S;
+  let s = `<rect x="${X(0)}" y="${Y(0)}" width="${P.W * S}" height="${P.D * S}" rx="${P.bevel * S}" fill="${css('--shell-fill')}" stroke="${css('--shell-edge')}" stroke-width="2"/>`;
+  s += `<rect x="${X(P.plate.insetX)}" y="${Y(P.T + 1)}" width="${(P.W - 2 * P.plate.insetX) * S}" height="${(P.D - P.T - 3) * S}" rx="6" fill="#0b0c0e" opacity=".9"/>`;
+  ['▶', '❚❚', '■'].forEach((g, i) => { const cx = X(P.W / 2 + (i - 1) * P.btn.spacing), cy = Y(P.btn.xFromBack);
+    s += `<circle cx="${cx}" cy="${cy}" r="${P.btn.d / 2 * S + 2}" fill="${css('--shell-edge')}"/><circle cx="${cx}" cy="${cy}" r="${P.btn.d / 2 * S}" fill="${css('--surface')}"/>`;
+    s += `<text x="${cx}" y="${cy + 5}" text-anchor="middle" font-size="13" fill="${css('--text')}">${g}</text>`; });
+  s += dimLine(X(0), Y(P.D) + 26, X(P.W), Y(P.D) + 26, `${P.W} mm`);
+  s += dimLine(X(P.W) + 14, Y(0), X(P.W) + 14, Y(P.D), `${P.D.toFixed(0)}`, true);
+  s += `<text x="${X(P.W / 2)}" y="${Y(P.T + 17)}" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#cfcfd4">face, seen from above</text>`;
+  document.getElementById('topv').innerHTML = s;
+}
+function drawRight() {
+  const S = 3.0, ox = 60, oy = 250, X = z => ox + z * S, Y = y => oy - y * S;
+  let s = `<path d="${svgPath(profile(), radii(), X, Y)}" fill="${css('--shell-fill')}" stroke="${css('--shell-edge')}" stroke-width="2"/>`;
+  const c = facePt(P.L / 2, P.usb.inset);
+  const p = (a, b) => add(add(c, mul(down, a)), mul(nOut, b));
+  const pts = [p(-P.usb.len / 2 + 1.5, P.usb.h / 2 - 1.5), p(P.usb.len / 2 - 1.5, P.usb.h / 2 - 1.5), p(P.usb.len / 2 - 1.5, -P.usb.h / 2 + 1.5), p(-P.usb.len / 2 + 1.5, -P.usb.h / 2 + 1.5)];
+  s += `<polygon points="${pts.map(q => `${X(q.x)},${Y(q.y)}`).join(' ')}" fill="#111" stroke="#111" stroke-width="${3 * S}" stroke-linejoin="round"/>`;
+  s += `<text x="${X(c.x) - 70}" y="${Y(c.y) - 32}" font-family="IBM Plex Mono" font-size="11" fill="${css('--dim')}">USB, follows the screen angle</text>`;
+  s += dimLine(X(0), Y(0) + 24, X(P.D), Y(0) + 24, `${P.D.toFixed(0)} mm`);
+  document.getElementById('right').innerHTML = s;
+}
+function tables(ck) {
+  const t = document.getElementById('checks');
+  ck.out.forEach(([name, v]) => { const tr = document.createElement('tr'); const ok = v >= 1;
+    tr.innerHTML = `<td>${name}</td><td class="n">${v >= 99 ? 'no overlap' : v.toFixed(1) + ' mm'}</td><td><span class="${ok ? 'pass' : 'fail'}">${ok ? 'fits' : 'tight'}</span></td>`; t.appendChild(tr); });
+  const d = document.getElementById('dims');
+  [['Width', `${P.W} mm`], ['Depth', `${P.D.toFixed(1)} mm`], ['Height at the back', `${P.Hb.toFixed(1)} mm`], ['Face angle', `${P.theta}° from the table`],
+   ['Face length', `${P.L} mm along the slope`], ['Top land', `${P.T} mm, buttons Ø ${P.btn.d} on ${P.btn.spacing} mm centres`],
+   ['Screen', `${P.screen.w} × ${P.screen.h} mm, centred in the glass`], ['Speaker', `Ø ${P.spk.d} × ${P.spk.depth} mm, grille Ø ${P.grille.d}, ${P.grille.hole} mm holes`],
+   ['Wall', `${P.wall} mm final, ${P.wallProto} mm prototype`]].forEach(([k, v]) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${k}</td><td class="n">${v}</td>`; d.appendChild(tr); });
+  document.getElementById('sizeTag').textContent = `${P.W} × ${P.D.toFixed(0)} × ${P.Hb.toFixed(0)} mm`;
+}
+const ck = checks();
+function drawAll() { drawSection(ck); drawFace(); drawTop(); drawRight(); }
+drawAll(); tables(ck);
+window.addEventListener('themechange', drawAll);
+
+// ===================== 3D =====================
+const canvas = document.getElementById('three');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const camera = new THREE.PerspectiveCamera(28, 1, 1, 3000);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.minDistance = 160; controls.maxDistance = 700;
+controls.target.set(0, P.Hb * 0.45, 0);
+
+const FIN = {
+  silver:   { label: 'Silver',   body: 0xc9cbcf, metal: 0.45, rough: 0.34, plinth: 0x6c6e72, icon: '#2b2d31' },
+  white:    { label: 'White',    body: 0xf0f0ec, metal: 0.0,  rough: 0.55, plinth: 0xb4b4b0, icon: '#4a4c50' },
+  graphite: { label: 'Graphite', body: 0x3a3c41, metal: 0.25, rough: 0.42, plinth: 0x1a1b1e, icon: '#e0e0e4' },
+  sand:     { label: 'Sand',     body: 0xd9cfbb, metal: 0.0,  rough: 0.6,  plinth: 0x9a907c, icon: '#4e4738' },
+};
+const bodyMat = new THREE.MeshPhysicalMaterial({ color: FIN.silver.body, metalness: FIN.silver.metal, roughness: FIN.silver.rough, clearcoat: 0.25, clearcoatRoughness: 0.4 });
+const plinthMat = new THREE.MeshStandardMaterial({ color: FIN.silver.plinth, roughness: 0.7 });
+const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x0a0b0d, roughness: 0.08, metalness: 0.0, clearcoat: 1, clearcoatRoughness: 0.03 });
+
+function shapeFrom(pts, rr) {
+  const c = corners(pts, rr), sh = new THREE.Shape();
+  sh.moveTo(c[0].e.x, c[0].e.y);
+  for (let k = 1; k <= c.length; k++) { const q = c[k % c.length]; sh.lineTo(q.s.x, q.s.y); sh.quadraticCurveTo(q.p.x, q.p.y, q.e.x, q.e.y); }
+  return sh;
+}
+const bv = P.bevel;
+const bodyShape = shapeFrom(inset(profile(), bv), radii().map(r => Math.max(0.6, r - bv)));
+const bodyGeo = new THREE.ExtrudeGeometry(bodyShape, { depth: P.W - 2 * bv, bevelEnabled: true, bevelThickness: bv, bevelSize: bv, bevelSegments: 8, curveSegments: 28 });
+bodyGeo.rotateY(-Math.PI / 2);
+bodyGeo.computeBoundingBox();
+const bb = bodyGeo.boundingBox;
+bodyGeo.translate(-(bb.min.x + bb.max.x) / 2, 0, -P.D / 2);
+bodyGeo.computeVertexNormals();
+const body = new THREE.Mesh(bodyGeo, bodyMat); body.castShadow = true; body.receiveShadow = true; scene.add(body);
+const Z = z => z - P.D / 2;
+
+function rrect(w, h, r) { const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r); s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r); s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y); return s; }
+const plGeo = new THREE.ExtrudeGeometry(rrect(P.W - 2 * P.plinthInset, P.D - 2 * P.plinthInset, 6), { depth: P.plinth + 0.5, bevelEnabled: false });
+plGeo.rotateX(-Math.PI / 2);
+const plinth = new THREE.Mesh(plGeo, plinthMat); plinth.castShadow = true; scene.add(plinth);
+
+const faceBasis = new THREE.Matrix4().makeBasis(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, sT, -cT), new THREE.Vector3(0, cT, sT));
+function onFace(mesh, along, out = 0.25) {
+  const p = facePt(along, -out); mesh.position.set(0, p.y, Z(p.x)); mesh.quaternion.setFromRotationMatrix(faceBasis); scene.add(mesh); return mesh;
+}
+onFace(new THREE.Mesh(new THREE.ShapeGeometry(rrect(P.W - 2 * P.plate.insetX, P.L - 2 * P.plate.insetY, P.plate.r), 16), glassMat), P.L / 2, 0.3);
+
+async function screenTexture() {
+  try { await document.fonts.load('600 40px "Instrument Sans"'); } catch (e) { /* fall back to system font */ }
+  const cv = document.createElement('canvas'); cv.width = 960; cv.height = 640; const g = cv.getContext('2d');
+  g.fillStyle = '#f7f5ef'; g.fillRect(0, 0, 960, 640);
+  g.fillStyle = '#16213a'; g.fillRect(0, 0, 960, 76);
+  g.fillStyle = '#fff'; g.font = '700 34px "Instrument Sans", sans-serif'; g.fillText('CHANNELS', 26, 50);
+  g.font = '500 30px "Instrument Sans", sans-serif'; g.textAlign = 'right'; g.fillText('3 of 20', 930, 50); g.textAlign = 'left';
+  const rows = [['NPR News Now', '#16213a'], ['Up First', '#2f5d8a'], ['This American Life', '#b5431b'], ['Fresh Air', '#b7791f'], ['Radiolab', '#5a3e8a'], ['Planet Money', '#2f7d4f']];
+  const rh = (640 - 76) / rows.length;
+  rows.forEach(([t, col], i) => { const y = 76 + i * rh, sel = i === 2;
+    if (sel) { g.fillStyle = '#b5431b'; g.fillRect(0, y, 960, rh); } else { g.fillStyle = '#e3dfd5'; g.fillRect(0, y + rh - 2, 960, 2); }
+    g.fillStyle = sel ? '#ffffff' : col; g.beginPath(); g.roundRect(24, y + rh / 2 - 30, 60, 60, 10); g.fill();
+    g.fillStyle = sel ? '#b5431b' : '#fff'; g.font = '700 24px "Instrument Sans", sans-serif'; g.textAlign = 'center';
+    g.fillText(t.split(' ').map(w => w[0]).join('').slice(0, 3), 54, y + rh / 2 + 9); g.textAlign = 'left';
+    g.fillStyle = sel ? '#fff' : '#141414'; g.font = '600 42px "Instrument Sans", sans-serif'; g.fillText(t, 110, y + rh / 2 + 15); });
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8; return tex;
+}
+screenTexture().then(tex => {
+  onFace(new THREE.Mesh(new THREE.PlaneGeometry(P.screen.w, P.screen.h), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false })), P.L / 2, 0.35);
+});
+
+function iconTexture(kind, col) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g = cv.getContext('2d');
+  g.fillStyle = col; g.globalAlpha = 0.9;
+  if (kind === 0) { g.beginPath(); g.moveTo(100, 78); g.lineTo(178, 128); g.lineTo(100, 178); g.closePath(); g.fill(); }
+  if (kind === 1) { g.fillRect(92, 82, 24, 92); g.fillRect(140, 82, 24, 92); }
+  if (kind === 2) { g.fillRect(90, 90, 76, 76); }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const btnIcons = [];
+for (let i = 0; i < 3; i++) {
+  const x = (i - 1) * P.btn.spacing, z = Z(P.btn.xFromBack);
+  const gap = new THREE.Mesh(new THREE.RingGeometry(P.btn.d / 2, P.btn.d / 2 + 0.7, 48), new THREE.MeshBasicMaterial({ color: 0x1a1a1c }));
+  gap.rotation.x = -Math.PI / 2; gap.position.set(x, P.Hb + 0.03, z); scene.add(gap);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(P.btn.d / 2, P.btn.d / 2, P.btn.proud + 0.4, 48), bodyMat);
+  cap.position.set(x, P.Hb + (P.btn.proud - 0.4) / 2, z); cap.castShadow = true; scene.add(cap);
+  const icon = new THREE.Mesh(new THREE.CircleGeometry(P.btn.d / 2 - 0.4, 48), new THREE.MeshBasicMaterial({ transparent: true, map: iconTexture(i, FIN.silver.icon) }));
+  icon.rotation.x = -Math.PI / 2; icon.position.set(x, P.Hb + P.btn.proud + 0.02, z); scene.add(icon); btnIcons.push(icon);
+}
+
+{ const cv = document.createElement('canvas'); cv.width = cv.height = 1024; const g = cv.getContext('2d'), k = 1024 / P.grille.d, R = P.grille.d / 2;
+  g.fillStyle = '#121214';
+  for (let row = -20; row <= 20; row++) for (let col = -20; col <= 20; col++) {
+    const x = col * P.grille.pitch + (row % 2 ? P.grille.pitch / 2 : 0), y = row * P.grille.pitch * 0.866;
+    if (Math.hypot(x, y) <= R - P.grille.hole / 2) { g.beginPath(); g.arc((x + R) * k, (y + R) * k, P.grille.hole / 2 * k, 0, Math.PI * 2); g.fill(); } }
+  const t = new THREE.CanvasTexture(cv); t.anisotropy = 8;
+  const m = new THREE.Mesh(new THREE.CircleGeometry(R, 64), new THREE.MeshBasicMaterial({ map: t, transparent: true }));
+  m.rotation.y = Math.PI; m.position.set(0, P.spk.cy, Z(0) - 0.06); scene.add(m); }
+
+{ const c = facePt(P.L / 2, P.usb.inset);
+  const m = new THREE.Mesh(new THREE.ShapeGeometry(rrect(P.usb.len, P.usb.h, P.usb.h / 2 - 0.2), 12), new THREE.MeshBasicMaterial({ color: 0x0d0d0f }));
+  m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(0, -sT, cT), new THREE.Vector3(0, -cT, -sT), new THREE.Vector3(1, 0, 0)));
+  m.position.set(P.W / 2 + 0.06, c.y, Z(c.x)); scene.add(m); }
+
+const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(140, 260, 180); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); Object.assign(key.shadow.camera, { left: -150, right: 150, top: 150, bottom: -150, near: 10, far: 800 }); key.shadow.radius = 6; scene.add(key);
+scene.add(new THREE.HemisphereLight(0xffffff, 0xd0d0d4, 0.35));
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), new THREE.ShadowMaterial({ opacity: 0.16 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+
+const VIEWS = { hero: [175, 125, 245], side: [330, 70, 0.01], back: [-60, 110, -320], top: [0.01, 360, 60], usb: [300, 120, 120] };
+let tween = null;
+function goView(k) {
+  const from = camera.position.clone(), to = new THREE.Vector3(...VIEWS[k]), t0 = performance.now();
+  tween = now => { const t = Math.min(1, (now - t0) / 700), e = 1 - Math.pow(1 - t, 3); camera.position.lerpVectors(from, to, e); if (t >= 1) tween = null; };
+}
+camera.position.set(...VIEWS.hero);
+document.querySelectorAll('#views button').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('#views button').forEach(x => x.classList.remove('on')); btn.classList.add('on'); goView(btn.dataset.v); }));
+
+const finBar = document.getElementById('finish');
+Object.entries(FIN).forEach(([k, f], i) => { const btn = document.createElement('button'); if (!i) btn.classList.add('on');
+  btn.innerHTML = `<span class="dot" style="background:#${f.body.toString(16).padStart(6, '0')}"></span>${f.label}`;
+  btn.onclick = () => { finBar.querySelectorAll('button').forEach(x => x.classList.remove('on')); btn.classList.add('on');
+    bodyMat.color.setHex(f.body); bodyMat.metalness = f.metal; bodyMat.roughness = f.rough; plinthMat.color.setHex(f.plinth);
+    btnIcons.forEach((m, j) => { m.material.map.dispose(); m.material.map = iconTexture(j, f.icon); m.material.needsUpdate = true; }); };
+  finBar.appendChild(btn); });
+
+function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+window.addEventListener('resize', resize); resize();
+renderer.setAnimationLoop(now => { if (tween) tween(now); controls.update(); renderer.render(scene, camera); });
+</script>
+</body>
+</html>
