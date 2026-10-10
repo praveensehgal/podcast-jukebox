@@ -197,6 +197,21 @@ curl -s --get localhost:8787/resolve --data-urlencode 'url=https://play.podtrac.
 # {"ok":true,"data":{"url":"https://ondemand.npr.org/...mp3"}}
 ```
 
+### `GET /stream?url=<audio url>`
+
+Relays an episode's audio, so the device plays over plain HTTP and never opens a TLS
+session (decision 005: TLS plus the MP3 decoder does not fit in its memory). `url`
+follows the same rule as `/resolve`: it must belong to a cached episode of a
+channel-list feed, else 404. The resolved URL is tried first and the enclosure second,
+so an expired signed link still plays. A `Range: bytes=N-` header (resume, skip) is
+passed upstream and the 206 comes back with its `Content-Range`. Limits: 4 relays at
+once (429 beyond that), 1 GiB per relay, 416 for any other Range form, 502 when the
+origin fails or a redirect is refused.
+
+```sh
+curl -s --get localhost:8787/stream --data-urlencode 'url=https://ondemand.npr.org/...mp3' -H 'Range: bytes=1000000-' -o part.mp3
+```
+
 ### With a token
 
 ```sh

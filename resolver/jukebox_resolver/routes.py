@@ -6,13 +6,14 @@ import re
 import time
 
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, field_validator
 
 from . import __version__
 from .config import DEFAULT_EPISODES, MAX_EPISODES
 from .errors import ApiError, ok
 from .fetcher import BlockedUrlError, check_url
+from .stream import relay_audio
 
 router = APIRouter()
 ID_RE = re.compile(r"^[A-Za-z0-9:_-]{1,64}$")
@@ -119,3 +120,16 @@ async def resolve(request: Request) -> JSONResponse:
     if not state.episodes.knows_url(url, await allowed_feeds(request)):
         raise ApiError(404, "url is not a known episode")
     return ok({"url": await state.fetcher.resolve(url)})
+
+
+@router.get("/stream")
+async def stream(request: Request) -> Response:
+    """Relay an episode's audio so the device never needs TLS. Honours a resume Range."""
+    url = require_http_url(request.query_params.get("url"), "url")
+    state = request.app.state
+    sources = state.episodes.sources(url, await allowed_feeds(request))
+    if not sources:
+        raise ApiError(404, "url is not a known episode")
+    return await relay_audio(
+        state.fetcher, state.stream_slots, sources, request.headers.get("range")
+    )

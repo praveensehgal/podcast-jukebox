@@ -105,6 +105,32 @@ class Fetcher:
             return url
         return final or url
 
+    async def open_stream(self, url: str, range_header: str | None = None) -> httpx.Response:
+        """Open `url` for relaying, following redirects by hand; the caller must aclose().
+
+        Only a 200 or 206 comes back. The Range header rides along on every hop.
+        """
+        headers = {"Range": range_header} if range_header else {}
+        current = url
+        for hop in range(MAX_REDIRECTS + 1):
+            try:
+                request = self._client.build_request("GET", current, headers=headers)
+                resp = await self._client.send(request, stream=True)
+            except BlockedUrlError as exc:
+                if hop == 0:
+                    raise
+                raise FetchError(f"redirect refused: {exc}") from exc
+            except httpx.HTTPError as exc:
+                raise FetchError(f"GET {current}: {exc.__class__.__name__}: {exc}") from exc
+            target = _location(resp, current)
+            if target is None and resp.status_code in (200, 206):
+                return resp
+            await resp.aclose()
+            if target is None:
+                raise FetchError(f"GET {current}: HTTP {resp.status_code}")
+            current = target
+        raise FetchError(f"GET {url}: more than {MAX_REDIRECTS} redirects")
+
     async def _probe(self, method: str, url: str) -> str | None:
         current = url
         for hop in range(MAX_REDIRECTS + 1):

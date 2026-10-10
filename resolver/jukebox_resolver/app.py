@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hmac
 import logging
 import sys
@@ -13,7 +14,7 @@ from fastapi import FastAPI, Request, Response
 
 from . import __version__
 from .channels import ChannelService
-from .config import Settings
+from .config import STREAM_CONCURRENCY, Settings
 from .episodes import EpisodeService
 from .errors import err, install_error_handlers
 from .fetcher import Fetcher
@@ -91,6 +92,7 @@ def create_app(
     app.state.fetcher = fetcher
     app.state.channels = ChannelService(fetcher, store, settings.channels_url)
     app.state.episodes = EpisodeService(fetcher, store)
+    app.state.stream_slots = asyncio.Semaphore(STREAM_CONCURRENCY)
     app.state.started_at = time.time()
     install_middleware(app, settings.token)
     install_error_handlers(app)

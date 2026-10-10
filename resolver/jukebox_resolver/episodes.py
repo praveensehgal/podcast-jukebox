@@ -95,6 +95,19 @@ class EpisodeService:
                 return True
         return False
 
+    def sources(self, url: str, feeds: set[str]) -> list[str]:
+        """Where to fetch the cached episode `url` belongs to: resolved URL, then enclosure.
+
+        Empty when `url` is not an episode of `feeds`. The enclosure is the fallback for
+        a resolved link whose signature has expired.
+        """
+        for feed in feeds:
+            entry = self._cached(feed)
+            for ep in entry[1] if entry else ():
+                if url in (ep["url"], ep.get("final")):
+                    return list(dict.fromkeys(u for u in (ep.get("final"), ep["url"]) if u))
+        return []
+
     def _cached(self, feed: str) -> Cached | None:
         hit = self._mem.get(feed)
         if hit is None:

@@ -26,6 +26,9 @@ MAX_CONCURRENT_REFRESHES = 4  # upstream feed fetches in flight, service-wide
 MAX_EPISODES = 50
 DEFAULT_EPISODES = 20
 TITLE_MAX_CHARS = 200
+STREAM_CONCURRENCY = 4  # audio relays in flight; one device plays one episode
+STREAM_MAX_BYTES = 1024 * 1024 * 1024  # per relay; a three-hour episode is ~250 MB
+STREAM_CHUNK_BYTES = 16 * 1024
 
 
 @dataclass(frozen=True)
