@@ -246,3 +246,17 @@ async def test_hostile_enclosures_never_reach_the_transport(store):
     assert got[2]["url"] == "https://cdn.test/final.mp3"
     assert set(hosts_seen) == {"cdn.test"}
     await fetcher.aclose()
+
+
+@pytest.mark.asyncio
+async def test_knows_url_checks_only_allow_listed_cached_feeds(store):
+    fetcher = FakeFetcher(docs={FEED_URL: RSS}, resolves={NEW: "https://f/new"})
+    svc = EpisodeService(fetcher, store)
+    assert svc.knows_url(NEW, {FEED_URL}) is False  # nothing cached yet
+    await svc.get(FEED_URL, 1)
+    assert svc.knows_url(NEW, {FEED_URL}) and svc.knows_url("https://f/new", {FEED_URL})
+    assert svc.knows_url(MID, {FEED_URL}) is True  # cached, unresolved enclosure
+    assert svc.knows_url(NEW, set()) is False  # feed no longer in the channel list
+    assert svc.knows_url("https://cdn.example.org/other.mp3", {FEED_URL}) is False
+    cold = EpisodeService(FakeFetcher(), store)
+    assert cold.knows_url("https://f/new", {FEED_URL}) is True  # loaded from SQLite

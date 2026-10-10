@@ -28,7 +28,9 @@ from .fetcher import BlockedUrlError, Fetcher, FetchError
 from .store import Store
 
 log = logging.getLogger("jukebox.episodes")
-MAX_TRACKED_FEEDS = 200
+# Feeds are allow-listed against channels.md (at most 20 rows); 64 leaves room for the
+# list changing a few times within one process lifetime before old entries are dropped.
+MAX_TRACKED_FEEDS = 64
 
 Episode = dict[str, Any]
 Cached = tuple[float, list[Episode]]
@@ -85,13 +87,25 @@ class EpisodeService:
             if not self._locks[feed].locked():
                 del self._locks[feed]
 
-    async def _entry(self, feed: str) -> Cached:
-        now = time.time()
+    def knows_url(self, url: str, feeds: set[str]) -> bool:
+        """True if `url` is the enclosure or resolved URL of a cached episode of `feeds`."""
+        for feed in feeds:
+            entry = self._cached(feed)
+            if entry and any(url in (ep["url"], ep.get("final")) for ep in entry[1]):
+                return True
+        return False
+
+    def _cached(self, feed: str) -> Cached | None:
         hit = self._mem.get(feed)
         if hit is None:
             hit = self._store.get_feed(feed)
             if hit is not None:
                 self._remember(feed, hit)
+        return hit
+
+    async def _entry(self, feed: str) -> Cached:
+        now = time.time()
+        hit = self._cached(feed)
         if hit is not None and now - hit[0] < self._ttl:
             return hit
         failure = self._failed.get(feed)

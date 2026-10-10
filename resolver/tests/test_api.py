@@ -2,10 +2,11 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from conftest import CHANNELS_URL, FEED_URL, FakeFetcher
+from conftest import CHANNELS_MD, CHANNELS_URL, FEED_URL, RSS, FakeFetcher
 from jukebox_resolver.app import create_app
 from jukebox_resolver.config import CHANNELS_MAX_BYTES, FEED_MAX_BYTES, Settings
 from jukebox_resolver.fetcher import Fetcher
+from jukebox_resolver.store import Store
 
 
 def make_client(tmp_path, fetcher, token=None):
@@ -52,17 +53,21 @@ def test_services_pass_body_caps(client, fake_fetcher):
     assert fake_fetcher.caps == [CHANNELS_MAX_BYTES, FEED_MAX_BYTES]
 
 
-def test_private_urls_are_400(tmp_path):
+def test_private_urls_never_reach_the_transport(tmp_path):
     def handler(_: httpx.Request) -> httpx.Response:
         raise AssertionError("no request may reach the transport")
 
+    # Seed the last-good channel list so no network is needed for the allow-list.
+    Store(str(tmp_path / "api.db")).put_kv("channels_md", CHANNELS_MD)
     real = Fetcher(transport=httpx.MockTransport(handler), resolver=lambda _h: ["10.0.0.9"])
     with make_client(tmp_path, real) as c:
-        for url in ("http://169.254.169.254/latest", "http://intranet.local/x", "https://x.y:8443/"):
-            resp = c.get("/resolve", params={"url": url})
-            assert resp.status_code == 400, url
-            assert resp.json()["error"].startswith("url refused"), resp.json()
-        assert c.get("/episodes", params={"feed": "http://10.0.0.1/feed"}).status_code == 400
+        for url in ("http://169.254.169.254/latest", "http://intranet.local/x"):
+            assert c.get("/resolve", params={"url": url}).status_code == 404, url
+            assert c.get("/episodes", params={"feed": url}).status_code == 404, url
+        assert c.get("/resolve", params={"url": "https://x.y:8443/"}).status_code == 400
+        # A listed feed whose host resolves to a private address is refused by the guard.
+        resp = c.get("/episodes", params={"feed": FEED_URL})
+        assert resp.status_code == 400 and resp.json()["error"].startswith("url refused")
 
 
 def test_episodes_validation(client):
@@ -74,10 +79,29 @@ def test_episodes_validation(client):
     assert len(client.get("/episodes", params={"feed": FEED_URL, "limit": 0}).json()["data"]) == 1
 
 
-def test_episodes_upstream_failure_is_502(client):
-    body = client.get("/episodes", params={"feed": "https://example.org/missing.xml"})
-    assert body.status_code == 502
-    assert body.json()["ok"] is False
+def test_episodes_upstream_failure_is_502(tmp_path):
+    fetcher = FakeFetcher(docs={CHANNELS_URL: CHANNELS_MD})  # feed listed but unreachable
+    with make_client(tmp_path, fetcher) as c:
+        body = c.get("/episodes", params={"feed": FEED_URL})
+        assert body.status_code == 502
+        assert body.json()["ok"] is False
+
+
+def test_episodes_rejects_feeds_outside_the_channel_list(client, fake_fetcher):
+    outsider = "https://example.org/not-listed.xml"
+    fake_fetcher.docs[outsider] = fake_fetcher.docs[FEED_URL]
+    resp = client.get("/episodes", params={"feed": outsider})
+    assert resp.status_code == 404
+    assert resp.json() == {"ok": False, "error": "feed is not in the channel list"}
+    assert outsider not in fake_fetcher.get_calls
+    svc = client.app.state.episodes
+    assert outsider not in svc._mem and outsider not in svc._failed and outsider not in svc._locks
+
+
+def test_episodes_fails_closed_without_a_channel_list(tmp_path):
+    with make_client(tmp_path, FakeFetcher(docs={FEED_URL: RSS})) as c:
+        resp = c.get("/episodes", params={"feed": FEED_URL})
+        assert resp.status_code == 502 and "channel list" in resp.json()["error"]
 
 
 def test_position_roundtrip(client):
@@ -116,10 +140,23 @@ def test_position_query_validation(client):
     assert client.get("/positions").status_code == 400
 
 
-def test_resolve(client):
-    body = client.get("/resolve", params={"url": "https://cdn.example.org/new.mp3"}).json()
-    assert body["data"] == {"url": "https://final.example.org/new.mp3"}
-    assert client.get("/resolve", params={"url": "javascript:alert(1)"}).status_code == 400
+def test_resolve_only_known_episode_urls(tmp_path, fake_fetcher):
+    enclosure, final = "https://cdn.example.org/new.mp3", "https://final.example.org/new.mp3"
+    with make_client(tmp_path, fake_fetcher) as c:
+        unknown = c.get("/resolve", params={"url": enclosure})
+        assert unknown.status_code == 404
+        assert unknown.json()["error"] == "url is not a known episode"
+        assert fake_fetcher.resolve_calls == []
+        c.get("/episodes", params={"feed": FEED_URL, "limit": 1})
+        assert c.get("/resolve", params={"url": enclosure}).json()["data"] == {"url": final}
+        assert c.get("/resolve", params={"url": final}).json()["data"] == {"url": final}
+        other = c.get("/resolve", params={"url": "https://cdn.example.org/other.mp3"})
+        assert other.status_code == 404
+        assert c.get("/resolve", params={"url": "javascript:alert(1)"}).status_code == 400
+    # After a restart the episode cache is reloaded from SQLite, so the URL is still known.
+    again = FakeFetcher(docs={CHANNELS_URL: CHANNELS_MD}, resolves={enclosure: final})
+    with make_client(tmp_path, again) as c:
+        assert c.get("/resolve", params={"url": enclosure}).json()["data"] == {"url": final}
 
 
 def test_unknown_route_uses_envelope(client):

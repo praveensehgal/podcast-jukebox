@@ -83,7 +83,7 @@ Some prose with | pipes | in it.
 | 3 |  | https://blank.example.org/rss |
 | 4 | Not https | ftp://example.org/rss |
 | 21 | Out of range | https://example.org/21 |
-| 5 | The Daily | https://feeds.simplecast.com/54nAGcIl |
+| 5 | The Daily | https://example.org/feed.xml |
 """
 
 

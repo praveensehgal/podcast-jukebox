@@ -53,6 +53,12 @@ goes to stdout: `GET /episodes 200 312.4ms`.
 
 ## Outbound URL policy (SSRF guard)
 
+The input space is bounded first: `/episodes` only accepts feeds from `channels.md`
+(at most 20) and `/resolve` only accepts URLs of episodes already cached for those
+feeds (at most 50 each). Nothing outside that set is fetched, probed, locked or
+negative-cached, so a client cannot fill the caches or the backoff table with
+arbitrary URLs. In-memory tables are sized to that bound (64 feeds).
+
 Every URL the service is asked to fetch (`feed`, `url`, the channels URL) and every
 redirect `Location` it meets on the way is checked before any request is made:
 
@@ -127,7 +133,9 @@ curl -s localhost:8787/channels
 
 ### `GET /episodes?feed=<url>&limit=20`
 
-Newest-first episodes. `limit` is clamped to 1..50 (default 20). Cached 15 minutes per
+Newest-first episodes. `feed` must be one of the URLs in the current channel list
+(exact match); anything else is 404 `feed is not in the channel list` and is never
+fetched or cached. `limit` is clamped to 1..50 (default 20). Cached 15 minutes per
 feed in memory and in SQLite, so a restart is not cold; a stale copy is served if the
 feed is unreachable.
 
@@ -178,8 +186,11 @@ curl -s 'localhost:8787/positions?device=esp32-01'
 
 ### `GET /resolve?url=<audio url>`
 
-Follow redirects right before playing (signed CDN URLs expire). HEAD first, then a GET
-probe if the CDN rejects HEAD, else the input URL is returned unchanged.
+Follow redirects right before playing (signed CDN URLs expire). `url` must be the `url`
+of an episode the service currently has cached for a channel-list feed (the enclosure
+URL or an earlier resolved URL both work); anything else is 404 `url is not a known
+episode`. HEAD first, then a GET probe if the CDN rejects HEAD, else the input URL is
+returned unchanged.
 
 ```sh
 curl -s --get localhost:8787/resolve --data-urlencode 'url=https://play.podtrac.com/npr-500005/....mp3'

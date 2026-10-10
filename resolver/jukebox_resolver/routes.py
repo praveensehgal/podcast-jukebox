@@ -74,11 +74,18 @@ async def channels(request: Request) -> JSONResponse:
     return ok(await request.app.state.channels.get())
 
 
+async def allowed_feeds(request: Request) -> set[str]:
+    """Feed URLs in the current channel list (10 min cache, last good copy on failure)."""
+    return {channel["feed"] for channel in await request.app.state.channels.get()}
+
+
 @router.get("/episodes")
 async def episodes(request: Request) -> JSONResponse:
     params = request.query_params
     feed = require_http_url(params.get("feed"), "feed")
     limit = clamp_limit(params.get("limit"))
+    if feed not in await allowed_feeds(request):
+        raise ApiError(404, "feed is not in the channel list")
     return ok(await request.app.state.episodes.get(feed, limit))
 
 
@@ -108,4 +115,7 @@ async def positions(request: Request) -> JSONResponse:
 @router.get("/resolve")
 async def resolve(request: Request) -> JSONResponse:
     url = require_http_url(request.query_params.get("url"), "url")
-    return ok({"url": await request.app.state.fetcher.resolve(url)})
+    state = request.app.state
+    if not state.episodes.knows_url(url, await allowed_feeds(request)):
+        raise ApiError(404, "url is not a known episode")
+    return ok({"url": await state.fetcher.resolve(url)})
