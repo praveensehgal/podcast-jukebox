@@ -54,11 +54,8 @@ rolling `channels` release, which is what devices download.
 
 ## Repo visibility
 
-The repo is private. GitHub serves release assets of a private repo only with a token,
-so the device cannot fetch updates until one of these is done:
-
-1. make the repo public (`gh repo edit --visibility public`), nothing secret is in it, or
-2. mirror `manifest.json`, `firmware.bin` and `channels.md` to a public HTTPS host and
-   point the device there (NVS keys `ota/manifest` and `ota/channels`).
-
-See `docs/decisions/003-ota-via-github-releases.md`.
+The repo is public so that devices can fetch release assets without a token. Nothing
+secret lives here: Wi-Fi credentials and the setup-hotspot key are generated on the
+device and stay in NVS. If it ever needs to go private, mirror `manifest.json`,
+`firmware.bin` and `channels.md` to a public HTTPS host and set the NVS keys
+`ota/manifest` and `ota/channels`. See `docs/decisions/003-ota-via-github-releases.md`.
