@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field, field_validator
 from . import __version__
 from .config import DEFAULT_EPISODES, MAX_EPISODES
 from .errors import ApiError, ok
-from .fetcher import is_http_url
+from .fetcher import BlockedUrlError, check_url
 
 router = APIRouter()
 ID_RE = re.compile(r"^[A-Za-z0-9:_-]{1,64}$")
@@ -26,9 +26,11 @@ def require_id(value: str | None, name: str) -> str:
 
 
 def require_http_url(value: str | None, name: str) -> str:
-    if not value or not is_http_url(value):
-        raise ApiError(400, f"{name} must be an http(s) URL")
-    return value
+    try:
+        check_url(value or "")
+    except BlockedUrlError as exc:
+        raise ApiError(400, f"{name} refused: {exc}") from exc
+    return value or ""
 
 
 def clamp_limit(raw: str | None) -> int:

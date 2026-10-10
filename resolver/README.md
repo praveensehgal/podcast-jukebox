@@ -47,9 +47,25 @@ The container binds to `127.0.0.1:8787` only. Put it behind the box's reverse pr
 | `JUKEBOX_CHANNELS_URL` | GitHub `channels` release asset | Where `channels.md` is fetched from |
 | `JUKEBOX_TOKEN` | unset | When set, every endpoint except `/health` needs `X-Jukebox-Token: <value>` |
 
-Outbound requests use `User-Agent: podcast-jukebox-resolver/<version>`, a 15 s timeout
-(8 s for redirect probes), at most 6 redirects, and refuse anything that is not http(s).
-One log line per request goes to stdout: `GET /episodes 200 312.4ms`.
+Outbound requests use `User-Agent: podcast-jukebox-resolver/<version>`, 15 s connect and
+read timeouts (8 s for redirect probes), and at most 6 redirects. One log line per request
+goes to stdout: `GET /episodes 200 312.4ms`.
+
+## Outbound URL policy (SSRF guard)
+
+Every URL the service is asked to fetch (`feed`, `url`, the channels URL) and every
+redirect `Location` it meets on the way is checked before any request is made:
+
+- scheme must be `http` or `https`; port, if given, must be 80 or 443;
+- the host (or each address it resolves to) must be public: loopback, link-local
+  (169.254/16 including the cloud metadata address, fe80::/10), private (10/8,
+  172.16/12, 192.168/16, 100.64/10, fc00::/7), multicast, reserved and unspecified
+  addresses are refused, IPv4-mapped IPv6 included;
+- a public host that redirects to a refused one stops the chain: `/resolve` returns the
+  input URL unchanged and feed fetches fail with 502.
+
+Refused input URLs answer 400 `url refused: <reason>`. Response bodies are streamed and
+capped: feeds at 5 MB, `channels.md` at 256 KB; anything larger is a 502.
 
 ## API
 

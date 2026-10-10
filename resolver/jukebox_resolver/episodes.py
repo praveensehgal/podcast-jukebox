@@ -7,7 +7,7 @@ import logging
 import time
 from typing import Any
 
-from .config import FEED_TTL_S
+from .config import FEED_MAX_BYTES, FEED_TTL_S
 from .feeds import FeedError, parse_feed
 from .fetcher import Fetcher, FetchError
 from .store import Store
@@ -47,7 +47,7 @@ class EpisodeService:
             raise
 
     async def _refresh(self, feed: str) -> list[dict[str, Any]]:
-        xml_text = await self._fetcher.get_text(feed)
+        xml_text = await self._fetcher.get_text(feed, FEED_MAX_BYTES)
         parsed = parse_feed(feed, xml_text)
         episodes = await self._resolve_all(parsed)
         fetched_at = self._store.put_feed(feed, episodes)

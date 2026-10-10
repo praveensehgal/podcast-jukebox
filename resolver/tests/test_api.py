@@ -1,9 +1,11 @@
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
 from conftest import CHANNELS_URL, FEED_URL, FakeFetcher
 from jukebox_resolver.app import create_app
-from jukebox_resolver.config import Settings
+from jukebox_resolver.config import CHANNELS_MAX_BYTES, FEED_MAX_BYTES, Settings
+from jukebox_resolver.fetcher import Fetcher
 
 
 def make_client(tmp_path, fetcher, token=None):
@@ -44,10 +46,29 @@ def test_episodes(client, fake_fetcher):
     assert len(fake_fetcher.resolve_calls) == 3
 
 
+def test_services_pass_body_caps(client, fake_fetcher):
+    client.get("/channels")
+    client.get("/episodes", params={"feed": FEED_URL})
+    assert fake_fetcher.caps == [CHANNELS_MAX_BYTES, FEED_MAX_BYTES]
+
+
+def test_private_urls_are_400(tmp_path):
+    def handler(_: httpx.Request) -> httpx.Response:
+        raise AssertionError("no request may reach the transport")
+
+    real = Fetcher(transport=httpx.MockTransport(handler), resolver=lambda _h: ["10.0.0.9"])
+    with make_client(tmp_path, real) as c:
+        for url in ("http://169.254.169.254/latest", "http://intranet.local/x", "https://x.y:8443/"):
+            resp = c.get("/resolve", params={"url": url})
+            assert resp.status_code == 400, url
+            assert resp.json()["error"].startswith("url refused"), resp.json()
+        assert c.get("/episodes", params={"feed": "http://10.0.0.1/feed"}).status_code == 400
+
+
 def test_episodes_validation(client):
     assert client.get("/episodes").status_code == 400
     bad = client.get("/episodes", params={"feed": "ftp://x/y"}).json()
-    assert bad == {"ok": False, "error": "feed must be an http(s) URL"}
+    assert bad["ok"] is False and bad["error"].startswith("feed refused")
     assert client.get("/episodes", params={"feed": FEED_URL, "limit": "x"}).status_code == 400
     assert len(client.get("/episodes", params={"feed": FEED_URL, "limit": 999}).json()["data"]) == 3
     assert len(client.get("/episodes", params={"feed": FEED_URL, "limit": 0}).json()["data"]) == 1

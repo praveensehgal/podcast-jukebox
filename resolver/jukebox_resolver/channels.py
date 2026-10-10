@@ -7,7 +7,7 @@ import re
 import time
 from typing import Any
 
-from .config import CHANNELS_TTL_S
+from .config import CHANNELS_MAX_BYTES, CHANNELS_TTL_S
 from .fetcher import Fetcher, FetchError
 from .store import Store
 
@@ -64,7 +64,7 @@ class ChannelService:
         return channels
 
     async def _refresh(self) -> list[dict[str, Any]]:
-        text = await self._fetcher.get_text(self._url)
+        text = await self._fetcher.get_text(self._url, CHANNELS_MAX_BYTES)
         channels = parse_channels(text)
         if not channels:
             raise ValueError("no channel rows found")

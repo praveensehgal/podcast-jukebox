@@ -96,13 +96,15 @@ class FakeFetcher:
         self.docs = docs or {}
         self.resolves = resolves or {}
         self.get_calls: list[str] = []
+        self.caps: list[int] = []
         self.resolve_calls: list[str] = []
         self.closed = False
 
-    async def get_text(self, url: str) -> str:
+    async def get_text(self, url: str, max_bytes: int = 0) -> str:
         from jukebox_resolver.fetcher import FetchError
 
         self.get_calls.append(url)
+        self.caps.append(max_bytes)
         if url not in self.docs:
             raise FetchError(f"GET {url}: 404")
         return self.docs[url]

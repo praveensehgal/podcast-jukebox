@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .feeds import FeedError
-from .fetcher import FetchError
+from .fetcher import BlockedUrlError, FetchError
 
 log = logging.getLogger("jukebox.app")
 
@@ -51,6 +51,10 @@ def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(StarletteHTTPException)
     async def _http(_: Request, exc: StarletteHTTPException) -> JSONResponse:
         return err(str(exc.detail), exc.status_code)
+
+    @app.exception_handler(BlockedUrlError)
+    async def _blocked(_: Request, exc: BlockedUrlError) -> JSONResponse:
+        return err(f"url refused: {exc}", 400)
 
     @app.exception_handler(FetchError)
     async def _fetch(_: Request, exc: FetchError) -> JSONResponse:
