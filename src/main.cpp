@@ -1,9 +1,8 @@
-// Podcast Jukebox — boot skeleton.
+// Podcast Jukebox — firmware entry.
 //
-// What this firmware does today (v0.x): join Wi-Fi (captive portal on first run),
-// check for a newer release, update itself, then idle. Screen, knobs, audio and the
-// podcast resolver land in later releases; the point of this skeleton is that every
-// device shipped from now on can already be updated remotely.
+// Boot: screen on -> Wi-Fi (captive portal on first run) -> update check -> channel
+// list -> UI. The loop pumps LVGL and routes knob/button events (or their serial
+// stand-ins) to the active screen.
 
 #include <Arduino.h>
 #include <Preferences.h>
@@ -12,18 +11,22 @@
 #include <esp_random.h>
 
 #include "channels.h"
+#include "display.h"
+#include "input.h"
 #include "ota.h"
+#include "ui/ui.h"
 #include "version.h"
 
 static const char* kSetupSsid = "Jukebox-Setup";
 static const uint32_t kPortalTimeoutS = 180;
-static const int kBacklightPin = 27;  // Sunton ESP32-3248S035: TFT backlight, active high
+
+static std::vector<channels::Channel> channelList;
 
 // Per-device key for the setup hotspot. WiFiManager registers its /update
 // firmware-upload route unconditionally, so the hotspot must not be open. The key is
 // random, generated once from the hardware RNG and kept in NVS; it is never derived
-// from anything the AP broadcasts. It is printed on serial and, once the screen
-// exists, embedded in the Wi-Fi screen's QR code, so nobody ever types it.
+// from anything the AP broadcasts. It is printed on serial and shown on the boot
+// screen so nobody ever types it from memory.
 static String setupKey() {
     Preferences p;
     p.begin("net", false);
@@ -52,40 +55,67 @@ static bool connectWifi() {
     String key = setupKey();
     wm.setAPCallback([&key](WiFiManager*) {
         Serial.printf("[net] setup hotspot %s  key %s  (open http://192.168.4.1)\n", kSetupSsid, key.c_str());
+        ui::bootStatus("No Wi-Fi yet. On a phone, join:");
+        ui::bootStatus((String("  network  ") + kSetupSsid).c_str());
+        ui::bootStatus((String("  password ") + key).c_str());
+        ui::bootStatus("then open 192.168.4.1");
     });
-    // Uses credentials saved in NVS; opens the WPA2 "Jukebox-Setup" portal only if they fail.
+    ui::bootStatus("Connecting to Wi-Fi...");
     bool ok = wm.autoConnect(kSetupSsid, key.c_str());
     if (ok) {
         Serial.printf("[net] %s  ip %s  rssi %d\n", WiFi.SSID().c_str(),
                       WiFi.localIP().toString().c_str(), WiFi.RSSI());
+        ui::bootStatus((String("Wi-Fi: ") + WiFi.SSID()).c_str());
     } else {
         Serial.println("[net] no Wi-Fi; portal timed out");
+        ui::bootStatus("No Wi-Fi. Will keep trying after restart.");
     }
     return ok;
 }
 
+static void loadChannels() {
+    bool cached = false;
+    channelList = channels::load(cached);
+    Serial.printf("[channels] %u channels%s\n", (unsigned)channelList.size(), cached ? " (from cache)" : "");
+    for (const auto& c : channelList) Serial.printf("  %2u  %-24s %s\n", c.position, c.name.c_str(), c.feed.c_str());
+    char line[48];
+    snprintf(line, sizeof(line), "%u channels%s", (unsigned)channelList.size(), cached ? " (saved copy)" : "");
+    ui::bootStatus(line);
+}
+
 void setup() {
-    // Backlight on first, so a flashed board is visibly alive even before the UI exists.
-    pinMode(kBacklightPin, OUTPUT);
-    digitalWrite(kBacklightPin, HIGH);
     Serial.begin(115200);
     delay(200);
     Serial.printf("\n%s %s  (built %s %s)\n", FW_NAME, fwVersion(), __DATE__, __TIME__);
 
+    display::begin();
+    ui::bootShow(fwVersion());
+    input::begin();
+
     if (connectWifi()) {
+        ui::bootStatus("Checking for updates...");
         ota::Result r = ota::checkAndUpdate();
         Serial.printf("[ota] %s\n", ota::resultName(r));
+        ui::bootStatus(r == ota::Result::UpToDate ? "Up to date" : ota::resultName(r));
     }
-
-    bool cached = false;
-    std::vector<channels::Channel> list = channels::load(cached);
-    Serial.printf("[channels] %u channels%s\n", (unsigned)list.size(), cached ? " (from cache)" : "");
-    for (const auto& c : list) Serial.printf("  %2u  %-24s %s\n", c.position, c.name.c_str(), c.feed.c_str());
-
+    loadChannels();
+    ui::channelsShow(channelList, 0);
     Serial.println("[boot] ready");
 }
 
+static void route(const input::Event& e) {
+    if (e.kind == input::Kind::Volume) { ui::volumeFlash(e.value); return; }
+    if (ui::channelsHandle(e)) return;
+    if (e.kind == input::Kind::Ok && !channelList.empty()) {
+        const channels::Channel& c = channelList[ui::channelsSelected()];
+        Serial.printf("[app] open channel %u %s (episode list: next stage)\n", c.position, c.name.c_str());
+    }
+}
+
 void loop() {
-    // Nothing yet. Later: LVGL tick, encoder/button scan, audio pump.
-    delay(1000);
+    input::Event e;
+    while (input::poll(e)) route(e);
+    ui::volumeTick();
+    uint32_t wait = display::tick();
+    delay(min<uint32_t>(wait, 5));
 }

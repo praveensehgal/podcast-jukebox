@@ -170,6 +170,12 @@ Result checkAndUpdate() {
     Serial.printf("[ota] latest %s (%u bytes)\n", m.version.c_str(), m.size);
 
     if (compareVersions(m.version, fwVersion()) <= 0) return Result::UpToDate;
+    // A USB-flashed dev build must not replace itself with the last release, or every
+    // bench session would end with the board silently running old firmware.
+    if (strcmp(fwVersion(), "0.0.0-dev") == 0) {
+        Serial.printf("[ota] dev build; %s is available but not installed\n", m.version.c_str());
+        return Result::UpToDate;
+    }
 
     Result r = flashImage(m);
     if (r == Result::Updated) {

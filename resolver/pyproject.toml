@@ -1,0 +1,50 @@
+[project]
+name = "jukebox-resolver"
+version = "0.1.0"
+description = "Podcast Jukebox resolver: feeds to episode lists, resume positions, URL resolution"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.30,<1",
+    "httpx>=0.27,<1",
+    "defusedxml>=0.7,<1",
+]
+
+[project.scripts]
+jukebox-resolver = "jukebox_resolver.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["jukebox_resolver"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "N"]
+
+[tool.coverage.run]
+source = ["jukebox_resolver"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["jukebox_resolver", "conftest"]

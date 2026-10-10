@@ -1,0 +1,24 @@
+services:
+  jukebox-resolver:
+    build: .
+    image: jukebox-resolver:latest
+    container_name: jukebox-resolver
+    restart: unless-stopped
+    # The EC2 box fronts services with a reverse proxy on 80/443; never expose this publicly.
+    ports:
+      - "127.0.0.1:8787:8787"
+    environment:
+      JUKEBOX_DB: /data/resolver.db
+      # Set in a .env file next to this compose.yml (never commit it):
+      JUKEBOX_TOKEN: ${JUKEBOX_TOKEN:-}
+      JUKEBOX_CHANNELS_URL: ${JUKEBOX_CHANNELS_URL:-https://github.com/praveensehgal/podcast-jukebox/releases/download/channels/channels.md}
+    volumes:
+      - jukebox-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8787/health',timeout=3).status==200 else 1)"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  jukebox-data:
