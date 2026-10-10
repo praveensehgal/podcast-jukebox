@@ -13,6 +13,7 @@ from xml.etree.ElementTree import Element  # noqa: S405 - parsed via defusedxml
 from defusedxml import ElementTree as SafeET
 
 from .config import MAX_EPISODES, TITLE_MAX_CHARS
+from .guard import is_http_url
 
 TAG_RE = re.compile(r"<[^>]+>")
 
@@ -98,7 +99,7 @@ def _rss_item(feed_url: str, item: Element) -> tuple[datetime, dict[str, Any]] |
     enclosure = child(item, "enclosure")
     url = enclosure.get("url", "").strip() if enclosure is not None else ""
     published = parse_date(child_text(item, "pubDate"))
-    if not url or published is None:
+    if not is_http_url(url) or published is None:
         return None
     key = child_text(item, "guid") or url
     return published, {
@@ -125,6 +126,8 @@ def _atom_entry(feed_url: str, entry: Element) -> tuple[datetime, dict[str, Any]
     if link is None or published is None:
         return None
     url = link.get("href", "").strip()
+    if not is_http_url(url):
+        return None
     key = child_text(entry, "id") or url
     return published, {
         "id": episode_id(feed_url, key),

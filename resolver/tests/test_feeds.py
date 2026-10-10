@@ -115,3 +115,21 @@ def test_episode_cap_at_50():
     eps = parse_feed(FEED_URL, f'<rss version="2.0"><channel>{items}</channel></rss>')
     assert len(eps) == 50
     assert eps[0]["title"] == "e59"
+
+
+def test_non_http_enclosures_are_dropped():
+    items = "".join(
+        f"<item><title>{i}</title><guid>{i}</guid>"
+        f"<pubDate>Mon, 01 Sep 2025 10:00:00 +0000</pubDate>"
+        f'<enclosure url="{u}" type="audio/mpeg"/></item>'
+        for i, u in enumerate(
+            ["ftp://a/x.mp3", "file:///x.mp3", "https://a:8443/x.mp3", "javascript:1", "https://a/ok.mp3"]
+        )
+    )
+    eps = parse_feed(FEED_URL, f'<rss version="2.0"><channel>{items}</channel></rss>')
+    assert [e["url"] for e in eps] == ["https://a/ok.mp3"]
+    atom = (
+        '<feed xmlns="http://www.w3.org/2005/Atom"><entry><id>a</id><title>t</title>'
+        '<updated>2025-09-01T10:00:00Z</updated><link rel="enclosure" href="ftp://a/x"/></entry></feed>'
+    )
+    assert parse_feed(FEED_URL, atom) == []

@@ -84,6 +84,16 @@ cannot move the connection.
 - Redirect probes are limited to 8 in flight service-wide, and only the episodes a
   request actually returns are resolved (results are cached with the feed), so a
   `limit=50` request costs at most 50 probes once per 15 minutes.
+- Every `/episodes` request has a 20 s wall-clock budget covering the cache lookup, the
+  upstream fetch and URL resolution. If resolution is still running at the deadline the
+  request answers anyway with enclosure URLs for the unresolved episodes; they are
+  retried on the next request. At most 4 upstream feed fetches run at once service-wide;
+  a request that never got a fetch slot inside its budget gets a 502 without a backoff
+  entry.
+- Enclosure URLs from feeds go through the same policy as everything else: episodes
+  whose enclosure is not http(s) on port 80/443 are dropped at parse time, and a probe
+  of an enclosure whose host is not public is refused before any connection (the
+  episode is returned with its enclosure URL unchanged).
 - A feed that fails (unreachable, oversize, unparseable, refused) is negative-cached
   for 60 s: repeated device requests get the same 502 (or 400) immediately, with no
   new upstream fetch; a stale copy, if any, is served instead. Refreshes are

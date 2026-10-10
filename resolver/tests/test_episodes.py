@@ -115,3 +115,134 @@ async def test_tracking_tables_are_bounded(store, monkeypatch):
         with pytest.raises(FetchError):
             await svc.get(f"https://example.org/{i}.xml", 1)
     assert len(svc._failed) <= 3 and len(svc._locks) <= 3
+
+
+# -- third review round: request budget, refresh cap, hostile enclosures ------------
+
+
+class SlowResolve(FakeFetcher):
+    def __init__(self, slow: dict[str, float], **kw) -> None:
+        super().__init__(**kw)
+        self.slow = slow
+        self.attempts: list[str] = []
+
+    async def resolve(self, url: str) -> str:
+        self.attempts.append(url)
+        if url in self.slow:
+            await asyncio.sleep(self.slow[url])
+        return await super().resolve(url)
+
+
+@pytest.mark.asyncio
+async def test_request_budget_returns_partial_resolution(store, monkeypatch):
+    monkeypatch.setattr(episodes_module, "EPISODES_REQUEST_BUDGET_S", 0.15)
+    fetcher = SlowResolve(
+        {MID: 2.0}, docs={FEED_URL: RSS}, resolves={NEW: "https://f/new", OLD: "https://f/old"}
+    )
+    svc = EpisodeService(fetcher, store)
+    started = asyncio.get_running_loop().time()
+    got = await svc.get(FEED_URL, 10)
+    assert asyncio.get_running_loop().time() - started < 1.0
+    assert [e["url"] for e in got] == ["https://f/new", MID, "https://f/old"]
+    fetcher.slow.clear()
+    got = await svc.get(FEED_URL, 10)  # the unresolved one is retried next time
+    assert [e["url"] for e in got][1] == MID and fetcher.attempts.count(MID) == 2
+
+
+@pytest.mark.asyncio
+async def test_request_budget_covers_fetch_and_is_negative_cached(store, monkeypatch):
+    monkeypatch.setattr(episodes_module, "EPISODES_REQUEST_BUDGET_S", 0.05)
+    fetcher = FakeFetcher(docs={FEED_URL: RSS}, delay=0.5)
+    svc = EpisodeService(fetcher, store)
+    with pytest.raises(FetchError, match="budget"):
+        await svc.get(FEED_URL, 3)
+    with pytest.raises(FetchError, match="retry in"):
+        await svc.get(FEED_URL, 3)
+    assert fetcher.get_calls == [FEED_URL]
+
+
+class CountingFetcher(FakeFetcher):
+    def __init__(self, **kw) -> None:
+        super().__init__(**kw)
+        self.in_flight = 0
+        self.peak = 0
+
+    async def get_text(self, url: str, max_bytes: int = 0) -> str:
+        self.in_flight += 1
+        self.peak = max(self.peak, self.in_flight)
+        try:
+            return await super().get_text(url, max_bytes)
+        finally:
+            self.in_flight -= 1
+
+
+@pytest.mark.asyncio
+async def test_concurrent_refreshes_are_capped_service_wide(store, monkeypatch):
+    monkeypatch.setattr(episodes_module, "MAX_CONCURRENT_REFRESHES", 2)
+    feeds = [f"https://example.org/{i}.xml" for i in range(8)]
+    fetcher = CountingFetcher(docs=dict.fromkeys(feeds, RSS), delay=0.02)
+    svc = EpisodeService(fetcher, store)
+    results = await asyncio.gather(*(svc.get(f, 1) for f in feeds))
+    assert all(len(r) == 1 for r in results)
+    assert fetcher.peak <= 2 and len(fetcher.get_calls) == 8
+
+
+@pytest.mark.asyncio
+async def test_queued_refresh_timeout_is_not_negative_cached(store, monkeypatch):
+    monkeypatch.setattr(episodes_module, "MAX_CONCURRENT_REFRESHES", 1)
+    monkeypatch.setattr(episodes_module, "EPISODES_REQUEST_BUDGET_S", 0.05)
+    fetcher = FakeFetcher(docs={FEED_URL: RSS})
+    svc = EpisodeService(fetcher, store)
+    await svc._refreshes.acquire()  # another feed's fetch holds the only slot
+    try:
+        with pytest.raises(FetchError, match="budget"):
+            await svc.get(FEED_URL, 1)
+    finally:
+        svc._refreshes.release()
+    assert FEED_URL not in svc._failed  # it never started fetching, so no backoff
+    assert fetcher.get_calls == []
+    assert len(await svc.get(FEED_URL, 1)) == 1  # works once a slot is free
+
+
+HOSTILE_RSS = """<rss version="2.0"><channel>
+<item><title>meta</title><guid>m</guid><pubDate>Mon, 01 Sep 2025 10:05:00 +0000</pubDate>
+  <enclosure url="http://169.254.169.254/latest/meta-data/" type="audio/mpeg"/></item>
+<item><title>intranet</title><guid>i</guid><pubDate>Mon, 01 Sep 2025 10:04:00 +0000</pubDate>
+  <enclosure url="http://internal.test/a.mp3" type="audio/mpeg"/></item>
+<item><title>fine</title><guid>f</guid><pubDate>Mon, 01 Sep 2025 10:03:00 +0000</pubDate>
+  <enclosure url="https://cdn.test/ok.mp3" type="audio/mpeg"/></item>
+<item><title>ftp</title><guid>p</guid><pubDate>Mon, 01 Sep 2025 10:02:00 +0000</pubDate>
+  <enclosure url="ftp://cdn.test/no.mp3" type="audio/mpeg"/></item>
+<item><title>port</title><guid>q</guid><pubDate>Mon, 01 Sep 2025 10:01:00 +0000</pubDate>
+  <enclosure url="https://cdn.test:8443/no.mp3" type="audio/mpeg"/></item>
+<item><title>file</title><guid>r</guid><pubDate>Mon, 01 Sep 2025 10:00:00 +0000</pubDate>
+  <enclosure url="file:///etc/passwd" type="audio/mpeg"/></item>
+</channel></rss>"""
+
+
+@pytest.mark.asyncio
+async def test_hostile_enclosures_never_reach_the_transport(store):
+    import httpx
+
+    from jukebox_resolver.fetcher import Fetcher
+
+    hosts_seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        hosts_seen.append(request.headers["host"])
+        if request.url.path == "/feed.xml":
+            return httpx.Response(200, stream=httpx.ByteStream(HOSTILE_RSS.encode()))
+        if request.url.path == "/ok.mp3":
+            return httpx.Response(302, headers={"location": "https://cdn.test/final.mp3"})
+        return httpx.Response(200, stream=httpx.ByteStream(b""))
+
+    resolver = {"cdn.test": ["93.184.216.34"], "internal.test": ["10.0.0.5"]}
+    fetcher = Fetcher(transport=httpx.MockTransport(handler), resolver=lambda h: resolver[h])
+    svc = EpisodeService(fetcher, store)
+    got = await svc.get("https://cdn.test/feed.xml", 10)
+    assert [e["title"] for e in got] == ["meta", "intranet", "fine"]  # ftp/port/file dropped
+    assert got[0]["url"] == "http://169.254.169.254/latest/meta-data/"  # unresolved, scheme ok
+    assert got[1]["url"] == "http://internal.test/a.mp3"
+    assert got[2]["url"] == "https://cdn.test/final.mp3"
+    assert set(hosts_seen) == {"cdn.test"}
+    await fetcher.aclose()

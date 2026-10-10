@@ -1,8 +1,10 @@
 """Episode lists per feed: fetch, parse, cache 15 minutes, resolve audio URLs on demand.
 
-Failures are negative-cached for NEGATIVE_TTL_S so an unreachable feed does not cost an
-upstream round trip per device request; refreshes are single-flight per feed and bounded
-by FEED_REFRESH_BUDGET_S.
+Bounds: one wall-clock budget per request (EPISODES_REQUEST_BUDGET_S) covering the
+cache lookup, the upstream fetch and URL resolution; at most MAX_CONCURRENT_REFRESHES
+upstream fetches service-wide; single-flight per feed; failures negative-cached for
+NEGATIVE_TTL_S. When the budget runs out during resolution the request still answers,
+with enclosure URLs for whatever is not resolved yet.
 """
 
 from __future__ import annotations
@@ -13,7 +15,14 @@ import time
 from collections import defaultdict
 from typing import Any
 
-from .config import FEED_MAX_BYTES, FEED_REFRESH_BUDGET_S, FEED_TTL_S, NEGATIVE_TTL_S
+from .config import (
+    EPISODES_REQUEST_BUDGET_S,
+    FEED_MAX_BYTES,
+    FEED_REFRESH_BUDGET_S,
+    FEED_TTL_S,
+    MAX_CONCURRENT_REFRESHES,
+    NEGATIVE_TTL_S,
+)
 from .feeds import FeedError, parse_feed
 from .fetcher import BlockedUrlError, Fetcher, FetchError
 from .store import Store
@@ -51,12 +60,20 @@ class EpisodeService:
         self._mem: dict[str, Cached] = {}
         self._failed: dict[str, Failure] = {}
         self._locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+        self._refreshes = asyncio.Semaphore(MAX_CONCURRENT_REFRESHES)
 
     async def get(self, feed: str, limit: int) -> list[Episode]:
+        deadline = asyncio.get_running_loop().time() + EPISODES_REQUEST_BUDGET_S
         try:
             async with self._locks[feed]:
-                fetched_at, episodes = await self._entry(feed)
-                episodes = await self._resolve_slice(feed, fetched_at, episodes, limit)
+                try:
+                    async with asyncio.timeout_at(deadline):
+                        fetched_at, episodes = await self._entry(feed)
+                except TimeoutError as exc:
+                    raise FetchError(
+                        f"request exceeded the {EPISODES_REQUEST_BUDGET_S:g} s budget"
+                    ) from exc
+                episodes = await self._resolve_slice(feed, fetched_at, episodes, limit, deadline)
         finally:
             self._prune_locks()
         return _public(episodes[:limit])
@@ -86,19 +103,28 @@ class EpisodeService:
         try:
             return await self._refresh(feed)
         except (FetchError, FeedError, BlockedUrlError) as exc:
-            self._failed[feed] = (now + NEGATIVE_TTL_S, exc)
-            _prune(self._failed)
+            self._fail(feed, exc)
             if hit is not None:
                 log.warning("feed refresh failed for %s (%s); serving stale copy", feed, exc)
                 return hit
             raise
 
+    def _fail(self, feed: str, exc: Exception) -> None:
+        self._failed[feed] = (time.time() + NEGATIVE_TTL_S, exc)
+        _prune(self._failed)
+
     async def _refresh(self, feed: str) -> Cached:
-        try:
-            async with asyncio.timeout(FEED_REFRESH_BUDGET_S):
-                xml_text = await self._fetcher.get_text(feed, FEED_MAX_BYTES)
-        except TimeoutError as exc:
-            raise FetchError(f"feed refresh exceeded the {FEED_REFRESH_BUDGET_S} s budget") from exc
+        async with self._refreshes:  # cancelled while queued: no negative cache entry
+            try:
+                async with asyncio.timeout(FEED_REFRESH_BUDGET_S):
+                    xml_text = await self._fetcher.get_text(feed, FEED_MAX_BYTES)
+            except TimeoutError as exc:
+                raise FetchError(
+                    f"feed refresh exceeded the {FEED_REFRESH_BUDGET_S} s budget"
+                ) from exc
+            except asyncio.CancelledError:
+                self._fail(feed, FetchError("feed fetch exceeded the request budget"))
+                raise
         episodes = _internal(parse_feed(feed, xml_text))
         fetched_at = self._store.put_feed(feed, episodes)
         self._failed.pop(feed, None)
@@ -111,20 +137,28 @@ class EpisodeService:
         _prune(self._mem)
 
     async def _resolve_slice(
-        self, feed: str, fetched_at: float, episodes: list[Episode], limit: int
+        self, feed: str, fetched_at: float, episodes: list[Episode], limit: int, deadline: float
     ) -> list[Episode]:
-        """Resolve only the requested, not-yet-resolved episodes; persist the result."""
+        """Resolve the requested, not-yet-resolved episodes until the deadline; persist."""
         pending = [i for i, ep in enumerate(episodes[:limit]) if ep.get("final") is None]
         if not pending:
             return episodes
-        finals = await asyncio.gather(
-            *(self._fetcher.resolve(episodes[i]["url"]) for i in pending),
-            return_exceptions=True,
-        )
+        tasks = {asyncio.create_task(self._fetcher.resolve(episodes[i]["url"])): i for i in pending}
+        remaining = max(0.0, deadline - asyncio.get_running_loop().time())
+        done, not_done = await asyncio.wait(tasks, timeout=remaining)
+        if not_done:
+            log.warning("%s: budget hit, %d of %d URLs unresolved", feed, len(not_done), len(tasks))
+            for task in not_done:
+                task.cancel()
+            await asyncio.gather(*not_done, return_exceptions=True)
         updated = list(episodes)
-        for index, final in zip(pending, finals, strict=True):
-            if isinstance(final, str):
-                updated[index] = {**episodes[index], "final": final}
+        for task in done:
+            index = tasks[task]
+            if task.exception() is None:
+                updated[index] = {**episodes[index], "final": task.result()}
+            else:
+                log.info("%s: probe skipped for %s: %s", feed, episodes[index]["url"],
+                         task.exception())
         self._store.put_feed(feed, updated, fetched_at)
         self._remember(feed, (fetched_at, updated))
         return updated
