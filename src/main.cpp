@@ -16,19 +16,32 @@
 static const char* kSetupSsid = "Jukebox-Setup";
 static const uint32_t kPortalTimeoutS = 180;
 
+// Per-device key for the setup hotspot: "jb-" + last three MAC bytes. WiFiManager
+// registers its /update firmware-upload route unconditionally, so the hotspot must
+// not be open. The key is printed on serial and, once the screen exists, embedded in
+// the Wi-Fi screen's QR code, so nobody ever types it.
+static String setupKey() {
+    uint8_t mac[6];
+    WiFi.macAddress(mac);
+    char key[12];
+    snprintf(key, sizeof(key), "jb-%02x%02x%02x", mac[3], mac[4], mac[5]);
+    return String(key);
+}
+
 static bool connectWifi() {
     WiFi.mode(WIFI_STA);
     WiFi.setHostname("podcast-jukebox");
     WiFiManager wm;
     wm.setConfigPortalTimeout(kPortalTimeoutS);
     wm.setConnectTimeout(20);
-    // The portal is an open hotspot for three minutes. Keep it to Wi-Fi setup only:
-    // WiFiManager's default menu includes a firmware-upload page, which must not be
-    // reachable from an unauthenticated AP. Updates come only from signed-off releases.
-    std::vector<const char*> menu = {"wifi", "info", "exit"};
+    std::vector<const char*> menu = {"wifi", "info", "exit"};  // no upload page in the menu
     wm.setMenu(menu);
-    // Uses credentials saved in NVS; opens the "Jukebox-Setup" portal only if they fail.
-    bool ok = wm.autoConnect(kSetupSsid);
+    String key = setupKey();
+    wm.setAPCallback([&key](WiFiManager*) {
+        Serial.printf("[net] setup hotspot %s  key %s  (open http://192.168.4.1)\n", kSetupSsid, key.c_str());
+    });
+    // Uses credentials saved in NVS; opens the WPA2 "Jukebox-Setup" portal only if they fail.
+    bool ok = wm.autoConnect(kSetupSsid, key.c_str());
     if (ok) {
         Serial.printf("[net] %s  ip %s  rssi %d\n", WiFi.SSID().c_str(),
                       WiFi.localIP().toString().c_str(), WiFi.RSSI());
