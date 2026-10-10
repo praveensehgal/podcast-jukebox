@@ -92,6 +92,14 @@ overridable in NVS `ota/resolver`. It must be restarted after pulling this commi
   and the earlier socket pinout notes, not from a photo of this board; its continuity
   checks (pad 3 to the IO22 wire, pad 6 to the IO21 wire) are what confirm it on the bench.
 - The three physical switches, and whether GPIO 18/19/23 behave with real switches.
+- How the enclosure holds anything. Enclosure D is still the thin look-and-feel shell:
+  grille holes, three button holes, a USB slot. It has no speaker seat, no switch
+  carrier, no posts for the Sunton board and no place for the amp. The caps are plain
+  flanged discs with no socket for the switch stem (the switches are 12 x 12 x 15 mm:
+  body 4.3, round stem 3.5 mm, numbers from ANANDRADIO/cad). Fit is unchecked too: the
+  centre switch with a carrier under it hangs to roughly z 45-50, over the speaker
+  magnet (speaker centre z 31.5). The speaker's depth and magnet diameter are not
+  measured (AnandRadio's lib.scad marks 50 mm and 20 mm as MEASURE).
 - Joining a network from the on-screen keyboard, and the non-blocking phone-setup portal
   started from the Wi-Fi screen (the boot-time portal was proven; this path is new).
 - That a failed join really leaves the old network's credentials saved.
@@ -108,9 +116,14 @@ overridable in NVS `ota/resolver`. It must be restarted after pulling this commi
 
 1. Solder the MAX98357A and speaker and listen: docs/soldering-guide.html, Job A. DIN goes
    to the ESP32 module's edge pad for IO16 (12th from the antenna on the IO22 side).
-2. Solder the three switches to the module's edge pads for IO18/19/23 (same guide, Job B)
-   and print the caps.
-3. Exercise the keyboard join and the phone portal from the Wi-Fi screen.
-4. KCX module on arrival: version probe, then the driver branch.
-5. Resolver to EC2 with a token, then cut `v0.2.0` (the first release that can play).
-6. Print the fixed enclosure and check the fit with calipers.
+2. Design the enclosure's insides: speaker seat behind the grille, a carrier for the
+   three switches with caps that press onto the stems, posts for the board, a place for
+   the amp. Needs the speaker measured with calipers first (rim diameter, depth, magnet
+   diameter). Mockup first, then a fit-test print, as with the shell.
+3. Solder the three switches to the module's edge pads for IO18/19/23 (same guide, Job B)
+   once the carrier exists, so the harness is cut to length. A breadboard holds the
+   switches for an earlier test.
+4. Exercise the keyboard join and the phone portal from the Wi-Fi screen.
+5. KCX module on arrival: version probe, then the driver branch.
+6. Resolver to EC2 with a token, then cut `v0.2.0` (the first release that can play).
+7. Print the enclosure with its insides and check the fit with calipers.
