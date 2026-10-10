@@ -1,0 +1,8 @@
+.pio/
+.vscode/
+*.bin
+!docs/**
+.env
+.env.*
+secrets*
+.DS_Store

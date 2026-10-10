@@ -1,0 +1,51 @@
+name: channels
+
+# channels.md changed on main: check every feed, then publish the file on the rolling
+# "channels" release so devices fetch releases/download/channels/channels.md.
+
+on:
+  push:
+    branches: [main]
+    paths: ["channels.md", ".github/workflows/channels.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate feeds
+        run: |
+          set -uo pipefail
+          fail=0; count=0
+          while IFS= read -r line; do
+            pos=$(echo "$line" | awk -F'|' '{gsub(/ /,"",$2); print $2}')
+            name=$(echo "$line" | awk -F'|' '{sub(/^ +/,"",$3); sub(/ +$/,"",$3); print $3}')
+            url=$(echo "$line" | awk -F'|' '{gsub(/ /,"",$4); print $4}')
+            [[ "$pos" =~ ^[0-9]+$ ]] || continue
+            count=$((count+1))
+            if [[ ${#name} -gt 24 ]]; then echo "::warning::row $pos name longer than 24 chars: $name"; fi
+            if [[ "$url" != https://* ]]; then echo "::error::row $pos feed is not https: $url"; fail=1; continue; fi
+            ctype=$(curl -sSL -o /tmp/feed.xml -w '%{content_type}' --max-time 25 -A "podcast-jukebox-ci" "$url" || true)
+            if ! head -c 2000 /tmp/feed.xml | grep -qiE '<rss|<feed|<\?xml'; then
+              echo "::error::row $pos ($name) did not return a feed (content-type: $ctype)"; fail=1
+            else
+              echo "ok  $pos  $name"
+            fi
+          done < <(grep -E '^\|' channels.md)
+          echo "$count rows checked"
+          [[ $count -ge 1 && $count -le 20 ]] || { echo "::error::expected 1..20 rows, got $count"; fail=1; }
+          exit $fail
+
+      - name: Publish to the rolling channels release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: channels
+          name: Channel list
+          body: "Current channels.md. Updated automatically on every change to main."
+          prerelease: true
+          files: channels.md

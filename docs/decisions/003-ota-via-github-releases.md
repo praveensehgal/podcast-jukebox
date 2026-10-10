@@ -1,0 +1,9 @@
+# 003 - Firmware and channel list delivered from GitHub Releases
+
+**Date:** 2026-10-10
+**Status:** accepted, one open item
+**Context:** Praveen wants to update the firmware remotely and edit the podcast list in git; the device must check for updates on boot.
+**Decision:** A version tag `vX.Y.Z` triggers CI to build `firmware.bin`, write `manifest.json` (version, url, sha256, size) and attach both to a GitHub Release. The device fetches `releases/latest/download/manifest.json` on every boot, compares semver with its compiled-in `FW_VERSION`, streams a newer image straight into the inactive OTA partition while hashing it, verifies the sha256, flips the boot partition and reboots. The channel list is `channels.md` at the repo root; a push to `main` validates every feed and republishes the file on a rolling `channels` pre-release that the device downloads and caches in LittleFS. TLS trust is the ESP-IDF certificate bundle, so GitHub's certificate rotations do not strand devices. No tokens or secrets are compiled in; the manifest and channel URLs can be overridden from NVS.
+**Alternatives:** Hosting on EC2 behind sehgalp.com (rejected for v1: CI cannot reach the box since SSH is SSM-only, and it adds a deploy path for no gain). Cloudflare R2 (viable later, needs a secret in CI). Pulling `channels.md` from `raw.githubusercontent.com` (same auth constraint as releases, and no validation step).
+**Open item:** The repo is private, and GitHub requires a token to download release assets of a private repo. Either make the repo public (the firmware contains nothing secret; Wi-Fi credentials live in NVS) or mirror the three files to a public HTTPS host and set the NVS URLs. Praveen's call.
+**Consequences:** No bootloader rollback on the Arduino core's stock sdkconfig: a bad image that boots but misbehaves needs a new release to fix. Mitigation planned: boot counter + self-test before the next release is accepted.

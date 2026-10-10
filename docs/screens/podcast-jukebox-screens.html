@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Podcast Jukebox Screens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Azeret+Mono:wght@400;500;600&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root, [data-theme="light"] {
+  --bg: #f4f1ea; --surface: #fffdf8; --surface-2: #ece7dc;
+  --text: #1d1a14; --text-dim: #6f685b; --border: rgba(0,0,0,0.09);
+  --accent: #b5431b; --accent-dim: rgba(181,67,27,0.10);
+  --ink: #16213a; --ink-dim: rgba(22,33,58,0.08);
+  --ok: #2f7d4f; --warn: #b7791f; --shadow: 0 6px 24px rgba(40,30,10,0.10);
+}
+[data-theme="dark"] {
+  --bg: #15130f; --surface: #1e1b16; --surface-2: #26221c;
+  --text: #f1ece2; --text-dim: #a59c8c; --border: rgba(255,255,255,0.09);
+  --accent: #e2693a; --accent-dim: rgba(226,105,58,0.14);
+  --ink: #c9d4f0; --ink-dim: rgba(201,212,240,0.10);
+  --ok: #5bbf85; --warn: #e0a84a; --shadow: 0 6px 24px rgba(0,0,0,0.45);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #15130f; --surface: #1e1b16; --surface-2: #26221c;
+  --text: #f1ece2; --text-dim: #a59c8c; --border: rgba(255,255,255,0.09);
+  --accent: #e2693a; --accent-dim: rgba(226,105,58,0.14);
+  --ink: #c9d4f0; --ink-dim: rgba(201,212,240,0.10);
+  --ok: #5bbf85; --warn: #e0a84a; --shadow: 0 6px 24px rgba(0,0,0,0.45);
+}}
+* { box-sizing: border-box; min-width: 0; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif; line-height: 1.5;
+  background-image: radial-gradient(1200px 500px at 10% -10%, var(--accent-dim), transparent 60%);
+}
+.wrap { max-width: 1680px; margin: 0 auto; padding: 40px 32px 80px; }
+.eyebrow { font-family: 'Azeret Mono', monospace; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+h1 { font-size: 40px; font-weight: 800; letter-spacing: -0.5px; margin: 6px 0 8px; line-height: 1.1; }
+.lead { font-size: 17px; color: var(--text-dim); max-width: 820px; margin: 0 0 24px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 32px; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: transparent; color: var(--text-dim); padding: 8px 14px; font: 600 13px 'Azeret Mono', monospace; cursor: pointer; }
+.seg button.on { background: var(--ink); color: #fff; }
+[data-theme="dark"] .seg button.on { background: var(--ink); color: #15130f; }
+.toolbar .hint { font-size: 13px; color: var(--text-dim); }
+.theme-toggle { margin-left: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px; cursor: pointer; color: var(--text); }
+[data-theme="light"] .moon, [data-theme="dark"] .sun { display: none; }
+
+/* ---------- screen cards ---------- */
+.screens { display: grid; grid-template-columns: repeat(auto-fit, minmax(540px, 1fr)); gap: 28px; align-items: start; }
+.shot { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: var(--shadow); opacity: 0; animation: fadeUp .5s ease both; animation-delay: calc(var(--i) * .12s); }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(14px);} to { opacity: 1; transform: none; } }
+.shot__label { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+.shot__num { font: 700 12px 'Azeret Mono', monospace; color: var(--accent); background: var(--accent-dim); padding: 3px 8px; border-radius: 6px; }
+.shot__title { font-size: 20px; font-weight: 700; }
+.shot__sub { font-size: 13px; color: var(--text-dim); margin: -8px 0 14px; }
+
+.stage { overflow: auto; padding: 4px; }
+.bezel { display: inline-block; background: #0f0f10; padding: 14px 14px 12px; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); transform-origin: top left; }
+.panel { width: 480px; height: 320px; position: relative; overflow: hidden; background: #f7f5ef; color: #141414;
+  font-family: 'Montserrat', sans-serif; font-weight: 600; user-select: none; }
+.panel * { box-sizing: border-box; }
+
+/* device header */
+.hd { height: 36px; background: #16213a; color: #fff; display: flex; align-items: center; padding: 0 12px; font-size: 18px; font-weight: 700; letter-spacing: .5px; }
+.hd .count { margin-left: auto; font-size: 16px; font-weight: 600; opacity: .85; }
+.hd .back { font-size: 18px; margin-right: 10px; opacity: .8; }
+
+/* channel list */
+.rows { position: absolute; top: 36px; left: 0; right: 14px; bottom: 0; }
+.row { height: 35px; display: flex; align-items: center; gap: 10px; padding: 0 10px; font-size: 24px; border-bottom: 1px solid #e3dfd5; white-space: nowrap; overflow: hidden; }
+.row .art { width: 26px; height: 26px; border-radius: 4px; display: grid; place-items: center; color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.row.sel { background: #b5431b; color: #fff; border-color: #b5431b; }
+.row.sel .art { outline: 2px solid #fff; }
+.sb { position: absolute; top: 36px; right: 0; width: 14px; bottom: 0; background: #e3dfd5; }
+.sb .thumb { position: absolute; left: 3px; right: 3px; background: #16213a; border-radius: 4px; }
+
+/* episode list */
+.eps { position: absolute; top: 36px; left: 0; right: 14px; bottom: 0; }
+.ep { height: 71px; display: flex; align-items: stretch; border-bottom: 1px solid #e3dfd5; position: relative; }
+.ep .date { width: 74px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 15px; line-height: 1.1; color: #4a4a4a; border-right: 1px solid #e3dfd5; }
+.ep .date b { font-size: 24px; color: #141414; }
+.ep .body { flex: 1; padding: 4px 8px 0 10px; display: flex; flex-direction: column; min-width: 0; }
+.ep .title { font-size: 18px; line-height: 1.15; font-weight: 600; max-height: 42px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ep .meta { margin-top: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 16px; color: #4a4a4a; padding-bottom: 5px; }
+.ep .new { background: #2f7d4f; color: #fff; font-size: 12px; padding: 1px 7px; border-radius: 4px; letter-spacing: .5px; }
+.ep .dur { margin-left: auto; font-weight: 600; }
+.ep .prog { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: #d7d2c6; }
+.ep .prog i { display: block; height: 100%; background: #b5431b; }
+.ep.sel { background: #b5431b; color: #fff; border-color: #b5431b; }
+.ep.sel .date, .ep.sel .date b, .ep.sel .meta { color: #fff; border-color: rgba(255,255,255,.35); }
+.ep.sel .new { background: #fff; color: #2f7d4f; }
+
+/* now playing */
+.np { position: absolute; inset: 0; padding: 14px 16px 0; display: grid; grid-template-columns: 120px 1fr; grid-template-rows: 18px 102px 40px 14px; gap: 0 16px; align-content: start; }
+.np .art { width: 120px; height: 120px; border-radius: 8px; grid-row: 1 / 3; display: grid; place-items: center; color: #fff; font-size: 44px; font-weight: 700; }
+.np .chan { font-size: 15px; color: #4a4a4a; letter-spacing: .5px; text-transform: uppercase; line-height: 18px; }
+.np .title { font-size: 23px; line-height: 1.2; margin-top: 6px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.np .time { grid-column: 1 / 3; display: flex; align-items: center; gap: 12px; font-size: 24px; font-weight: 700; margin-top: 10px; }
+.np .time .state { margin-left: auto; font-size: 16px; padding: 3px 12px; border-radius: 20px; background: #2f7d4f; color: #fff; }
+.np .bar { grid-column: 1 / 3; height: 14px; background: #d7d2c6; border-radius: 7px; overflow: hidden; }
+.np .bar i { display: block; height: 100%; width: 27%; background: #16213a; }
+.panel.paused .np .time .state { background: #b7791f; }
+.panel.paused .np .time .state::before { content: 'PAUSED'; }
+.panel:not(.paused) .np .time .state::before { content: 'PLAYING'; }
+.vol { position: absolute; left: 0; right: 0; bottom: 0; height: 58px; background: rgba(22,33,58,.96); color: #fff; display: flex; align-items: center; gap: 12px; padding: 0 16px; font-size: 18px; font-weight: 700; transition: transform .25s ease; }
+.vol .segs { flex: 1; display: grid; grid-template-columns: repeat(16, 1fr); gap: 4px; height: 26px; }
+.vol .segs i { background: rgba(255,255,255,.22); border-radius: 2px; }
+.vol .segs i.on { background: #e2693a; }
+.vol .pct { font-family: 'Azeret Mono', monospace; font-weight: 500; min-width: 48px; text-align: right; }
+.panel.novol .vol { transform: translateY(100%); }
+
+/* settings-family screens */
+.row .val { margin-left: auto; font-size: 17px; color: #4a4a4a; font-weight: 600; }
+.row.sel .val { color: #fff; }
+.row .dot { width: 10px; height: 10px; border-radius: 50%; background: #2f7d4f; margin-right: 6px; flex-shrink: 0; }
+.row.sep { font-size: 20px; color: #4a4a4a; background: #ece7dc; }
+.sig { display: inline-flex; align-items: flex-end; gap: 2px; height: 18px; margin-right: 4px; flex-shrink: 0; }
+.sig i { width: 4px; background: #c9c3b6; border-radius: 1px; }
+.sig i:nth-child(1){height:6px}.sig i:nth-child(2){height:10px}.sig i:nth-child(3){height:14px}.sig i:nth-child(4){height:18px}
+.sig i.on { background: #16213a; } .row.sel .sig i.on { background: #fff; } .row.sel .sig i { background: rgba(255,255,255,.4); }
+.lock { font-size: 15px; margin-left: 6px; color: #4a4a4a; } .row.sel .lock { color: #fff; }
+.qr { width: 150px; height: 150px; display: grid; grid-template-columns: repeat(15, 1fr); gap: 0; background: #fff; padding: 6px; border: 2px solid #16213a; }
+.qr i { background: #fff; } .qr i.b { background: #141414; }
+.pw { position: absolute; top: 36px; left: 0; right: 0; bottom: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.pw .field { height: 52px; border: 3px solid #16213a; background: #fff; display: flex; align-items: center; padding: 0 12px; font-size: 26px; letter-spacing: 2px; font-family: 'Azeret Mono', monospace; }
+.pw .field .cur { width: 3px; height: 30px; background: #b5431b; margin-left: 2px; }
+.pw .mode { display: flex; gap: 8px; font-size: 14px; color: #4a4a4a; }
+.pw .mode span { padding: 2px 10px; border-radius: 4px; background: #ece7dc; } .pw .mode span.on { background: #16213a; color: #fff; }
+.pw .strip { margin-top: auto; display: flex; align-items: flex-end; gap: 2px; overflow: hidden; height: 74px; }
+.pw .strip span { width: 28px; height: 40px; display: grid; place-items: center; font-size: 22px; background: #ece7dc; border-radius: 4px; flex-shrink: 0; }
+.pw .strip span.cur { width: 54px; height: 70px; font-size: 44px; background: #b5431b; color: #fff; }
+.pw .strip span.act { font-size: 12px; width: 50px; background: #2f7d4f; color: #fff; }
+.wifi-split { position: absolute; top: 36px; left: 0; right: 14px; bottom: 0; display: grid; grid-template-columns: 1fr 170px; }
+.wifi-split .side { border-left: 1px solid #e3dfd5; padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 13px; text-align: center; color: #4a4a4a; line-height: 1.2; }
+.wifi-split .rows { position: static; }
+
+/* control strip */
+.strip { margin-top: 16px; display: flex; align-items: flex-start; gap: 16px; }
+.strip svg { flex-shrink: 0; }
+.legend { font-size: 13px; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-content: start; }
+.legend b { font-family: 'Azeret Mono', monospace; font-size: 11px; letter-spacing: 1px; color: var(--ink); white-space: nowrap; }
+.legend span { color: var(--text-dim); }
+.state-toggle { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+.state-toggle button { font: 600 12px 'Azeret Mono', monospace; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer; }
+.state-toggle button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* rules */
+.rules { margin-top: 36px; display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; }
+.ve-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; }
+.ve-card--hero { background: color-mix(in srgb, var(--surface) 92%, var(--accent) 8%); border-color: color-mix(in srgb, var(--border) 40%, var(--accent) 60%); }
+.ve-card__label { font-family: 'Azeret Mono', monospace; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent); margin-bottom: 12px; }
+.rule-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.rule-list li { display: grid; grid-template-columns: 150px 1fr; gap: 12px; font-size: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.rule-list li:last-child { border-bottom: 0; }
+.rule-list b { font-weight: 700; }
+.rule-list code { font-family: 'Azeret Mono', monospace; font-size: 12px; background: var(--surface-2); padding: 1px 6px; border-radius: 4px; }
+.specs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.kpi { background: var(--surface-2); border-radius: 10px; padding: 12px 14px; }
+.kpi .v { font-family: 'Azeret Mono', monospace; font-size: 22px; font-weight: 600; color: var(--ink); }
+.kpi .k { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+@media (max-width: 900px) { .rules { grid-template-columns: 1fr; } .wrap { padding: 24px 16px 60px; } h1 { font-size: 30px; } }
+@media (prefers-reduced-motion: reduce) { .shot { animation: none; opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Podcast Jukebox · UI mockup · 480 × 320</div>
+  <h1>Three screens, two knobs, three buttons</h1>
+  <p class="lead">Rendered at the panel's native pixel size in Montserrat, the typeface LVGL ships on the ESP32, so what you see is what the Sunton 3.5-inch display will draw. Use the size switch to judge legibility: the panel is physically 73 × 49 mm, so at 1:1 your monitor shows it larger than life.</p>
+
+  <div class="toolbar">
+    <div class="seg" id="zoom">
+      <button data-z="0.58">Real size</button>
+      <button data-z="1" class="on">1:1 pixels</button>
+      <button data-z="2">2×</button>
+    </div>
+    <span class="hint">Real size assumes a 96 dpi monitor. Hold a ruler to the bezel: it should read about 73 mm wide.</span>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+      <svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      <svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </div>
+
+  <div class="screens">
+
+    <!-- ============ SCREEN 1 ============ -->
+    <section class="shot" style="--i:0">
+      <div class="shot__label"><span class="shot__num">01</span><span class="shot__title">Channel list</span></div>
+      <p class="shot__sub">Home screen. Scroll knob moves the highlight one row per click. 8 rows visible of 20.</p>
+      <div class="stage"><div class="bezel"><div class="panel">
+        <div class="hd">CHANNELS <span class="count">7 of 20</span></div>
+        <div class="rows" id="chan"></div>
+        <div class="sb"><div class="thumb" style="top:0;height:40%"></div></div>
+      </div></div></div>
+      <div class="strip">
+        <svg width="250" height="92" viewBox="0 0 250 92" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink)">
+            <circle cx="40" cy="32" r="26"/><line x1="40" y1="32" x2="40" y2="10"/>
+            <circle cx="112" cy="32" r="26"/><line x1="112" y1="32" x2="126" y2="14"/>
+            <rect x="152" y="18" width="28" height="28" rx="6"/><rect x="186" y="18" width="28" height="28" rx="6"/><rect x="220" y="18" width="28" height="28" rx="6"/>
+          </g>
+          <g font-family="Azeret Mono, monospace" font-size="9" text-anchor="middle" fill="currentColor" style="color:var(--text-dim)">
+            <text x="40" y="76">SCROLL</text><text x="40" y="87">push = OK</text><text x="112" y="76">VOLUME</text>
+            <text x="166" y="60">OK</text><text x="200" y="60">PAUSE</text><text x="234" y="60">STOP</text>
+          </g>
+        </svg>
+        <div class="legend">
+          <b>SCROLL</b><span>Move highlight. Wraps at the ends.</span>
+          <b>PUSH / OK</b><span>Open the highlighted channel.</span>
+          <b>VOLUME</b><span>Shows the volume bar for 2 s, even here.</span>
+          <b>PAUSE</b><span>Resumes whatever was last playing.</span>
+          <b>STOP</b><span>Nothing to stop. Ignored.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 2 ============ -->
+    <section class="shot" style="--i:1">
+      <div class="shot__label"><span class="shot__num">02</span><span class="shot__title">Episode list</span></div>
+      <p class="shot__sub">Newest first. Two-line titles, date on the left, length on the right. 4 rows visible.</p>
+      <div class="stage"><div class="bezel"><div class="panel">
+        <div class="hd"><span class="back">&#9664;</span>This American Life <span class="count">3 of 14</span></div>
+        <div class="eps" id="eps"></div>
+        <div class="sb"><div class="thumb" style="top:8%;height:28%"></div></div>
+      </div></div></div>
+      <div class="strip">
+        <svg width="250" height="92" viewBox="0 0 250 92" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink)">
+            <circle cx="40" cy="32" r="26"/><line x1="40" y1="32" x2="40" y2="10"/>
+            <circle cx="112" cy="32" r="26"/><line x1="112" y1="32" x2="126" y2="14"/>
+            <rect x="152" y="18" width="28" height="28" rx="6"/><rect x="186" y="18" width="28" height="28" rx="6"/><rect x="220" y="18" width="28" height="28" rx="6"/>
+          </g>
+          <g font-family="Azeret Mono, monospace" font-size="9" text-anchor="middle" fill="currentColor" style="color:var(--text-dim)">
+            <text x="40" y="76">SCROLL</text><text x="40" y="87">push = OK</text><text x="112" y="76">VOLUME</text>
+            <text x="166" y="60">OK</text><text x="200" y="60">PAUSE</text><text x="234" y="60">STOP</text>
+          </g>
+        </svg>
+        <div class="legend">
+          <b>SCROLL</b><span>Move highlight through episodes.</span>
+          <b>PUSH / OK</b><span>Play the highlighted episode. Resumes if partly played.</span>
+          <b>VOLUME</b><span>Volume bar for 2 s.</span>
+          <b>PAUSE</b><span>Resumes the last episode if one is paused.</span>
+          <b>STOP</b><span>Back to the channel list.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 3 ============ -->
+    <section class="shot" style="--i:2">
+      <div class="shot__label"><span class="shot__num">03</span><span class="shot__title">Now playing</span></div>
+      <p class="shot__sub">Nothing to read but the title and the time. Volume bar slides up while the knob turns and hides 2 s later.</p>
+      <div class="stage"><div class="bezel"><div class="panel" id="np">
+        <div class="np">
+          <div class="art" style="background:#b5431b">TAL</div>
+          <div class="chan">This American Life</div>
+          <div class="title">856: The Call Nobody Wanted to Make</div>
+          <div class="time">12:48 <span style="color:#8a8375">/</span> 58:10 <span class="state"></span></div>
+          <div class="bar"><i></i></div>
+        </div>
+        <div class="vol">VOLUME <div class="segs" id="segs"></div> <span class="pct">11/16</span></div>
+      </div></div></div>
+      <div class="state-toggle">
+        <button class="on" data-st="playing">Playing</button>
+        <button data-st="paused">Paused</button>
+        <button data-st="novol">Hide volume bar</button>
+      </div>
+      <div class="strip">
+        <svg width="250" height="92" viewBox="0 0 250 92" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink)">
+            <circle cx="40" cy="32" r="26"/><line x1="40" y1="32" x2="40" y2="10"/>
+            <circle cx="112" cy="32" r="26"/><line x1="112" y1="32" x2="126" y2="14"/>
+            <rect x="152" y="18" width="28" height="28" rx="6"/><rect x="186" y="18" width="28" height="28" rx="6"/><rect x="220" y="18" width="28" height="28" rx="6"/>
+          </g>
+          <g font-family="Azeret Mono, monospace" font-size="9" text-anchor="middle" fill="currentColor" style="color:var(--text-dim)">
+            <text x="40" y="76">SCROLL</text><text x="40" y="87">push = OK</text><text x="112" y="76">VOLUME</text>
+            <text x="166" y="60">OK</text><text x="200" y="60">PAUSE</text><text x="234" y="60">STOP</text>
+          </g>
+        </svg>
+        <div class="legend">
+          <b>SCROLL</b><span>Skip 30 s forward or back per click. Audio keeps playing.</span>
+          <b>PUSH / OK</b><span>Back to this channel's episode list. Audio keeps playing.</span>
+          <b>VOLUME</b><span>16 steps. Bar shows while turning.</span>
+          <b>PAUSE</b><span>Toggle pause and resume. Badge turns amber.</span>
+          <b>STOP</b><span>Stop audio, save position, back to channel list.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 4 ============ -->
+    <section class="shot" style="--i:3">
+      <div class="shot__label"><span class="shot__num">04</span><span class="shot__title">Settings</span></div>
+      <p class="shot__sub">Reached by scrolling past the last channel, or by holding STOP for 3 s from anywhere. Same list grammar.</p>
+      <div class="stage"><div class="bezel"><div class="panel">
+        <div class="hd"><span class="back">&#9664;</span>SETTINGS</div>
+        <div class="rows">
+          <div class="row sel"><span class="dot"></span>Wi-Fi <span class="val">Sehgal-Home</span></div>
+          <div class="row"><span class="dot" style="background:#b7791f"></span>Bluetooth <span class="val">Not connected</span></div>
+          <div class="row">Sound output <span class="val">Speaker &#9654;</span></div>
+          <div class="row">Sleep timer <span class="val">Off</span></div>
+          <div class="row">Text size <span class="val">Large</span></div>
+          <div class="row">Check for new episodes <span class="val">Now</span></div>
+          <div class="row">About <span class="val">v1.0</span></div>
+          <div class="row sep">Back to channels</div>
+        </div>
+        <div class="sb"><div class="thumb" style="top:0;height:100%"></div></div>
+      </div></div></div>
+      <div class="strip">
+        <svg width="250" height="92" viewBox="0 0 250 92" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink)">
+            <circle cx="40" cy="32" r="26"/><line x1="40" y1="32" x2="40" y2="10"/>
+            <circle cx="112" cy="32" r="26"/><line x1="112" y1="32" x2="126" y2="14"/>
+            <rect x="152" y="18" width="28" height="28" rx="6"/><rect x="186" y="18" width="28" height="28" rx="6"/><rect x="220" y="18" width="28" height="28" rx="6"/>
+          </g>
+          <g font-family="Azeret Mono, monospace" font-size="9" text-anchor="middle" fill="currentColor" style="color:var(--text-dim)">
+            <text x="40" y="76">SCROLL</text><text x="40" y="87">push = OK</text><text x="112" y="76">VOLUME</text>
+            <text x="166" y="60">OK</text><text x="200" y="60">PAUSE</text><text x="234" y="60">STOP</text>
+          </g>
+        </svg>
+        <div class="legend">
+          <b>SCROLL</b><span>Move highlight.</span>
+          <b>PUSH / OK</b><span>Open the setting. On Sound output it toggles Speaker / Bluetooth in place.</span>
+          <b>STOP</b><span>Back to channels. Audio keeps playing throughout.</span>
+          <b>DOTS</b><span>Green = connected, amber = set up but not connected, none = off.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 5 ============ -->
+    <section class="shot" style="--i:4">
+      <div class="shot__label"><span class="shot__num">05</span><span class="shot__title">Wi-Fi</span></div>
+      <p class="shot__sub">Scan result on the left, the phone route on the right. Most installs never leave this screen.</p>
+      <div class="stage"><div class="bezel"><div class="panel">
+        <div class="hd"><span class="back">&#9664;</span>WI-FI <span class="count">Scanning&hellip;</span></div>
+        <div class="wifi-split">
+          <div class="rows">
+            <div class="row sel"><span class="sig"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>Sehgal-Home <span class="lock">&#128274;</span></div>
+            <div class="row"><span class="sig"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>Sehgal-Home-5G <span class="lock">&#128274;</span></div>
+            <div class="row"><span class="sig"><i class="on"></i><i class="on"></i><i></i><i></i></span>Fios-7K2PQ <span class="lock">&#128274;</span></div>
+            <div class="row"><span class="sig"><i class="on"></i><i></i><i></i><i></i></span>xfinitywifi</div>
+            <div class="row"><span class="sig"><i class="on"></i><i></i><i></i><i></i></span>NETGEAR41 <span class="lock">&#128274;</span></div>
+            <div class="row sep">Type a network name</div>
+          </div>
+          <div class="side">
+            <div class="qr" id="qr"></div>
+            <div><b>Or scan with a phone</b><br>joins "Jukebox-Setup" and opens the Wi-Fi page</div>
+          </div>
+        </div>
+        <div class="sb"><div class="thumb" style="top:0;height:70%"></div></div>
+      </div></div></div>
+      <div class="strip">
+        <svg width="250" height="92" viewBox="0 0 250 92" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink)">
+            <circle cx="40" cy="32" r="26"/><line x1="40" y1="32" x2="40" y2="10"/>
+            <circle cx="112" cy="32" r="26"/><line x1="112" y1="32" x2="126" y2="14"/>
+            <rect x="152" y="18" width="28" height="28" rx="6"/><rect x="186" y="18" width="28" height="28" rx="6"/><rect x="220" y="18" width="28" height="28" rx="6"/>
+          </g>
+          <g font-family="Azeret Mono, monospace" font-size="9" text-anchor="middle" fill="currentColor" style="color:var(--text-dim)">
+            <text x="40" y="76">SCROLL</text><text x="40" y="87">push = OK</text><text x="112" y="76">VOLUME</text>
+            <text x="166" y="60">OK</text><text x="200" y="60">PAUSE</text><text x="234" y="60">STOP</text>
+          </g>
+        </svg>
+        <div class="legend">
+          <b>SCROLL</b><span>Move through found networks. List refreshes every 10 s.</span>
+          <b>PUSH / OK</b><span>Pick a network. Locked ones go to the password screen.</span>
+          <b>PAUSE</b><span>Rescan now.</span>
+          <b>STOP</b><span>Back to Settings.</span>
+          <b>QR</b><span>Phone joins the box's own hotspot and gets a plain web page. Password typed on the phone.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 6 ============ -->
+    <section class="shot" style="--i:5">
+      <div class="shot__label"><span class="shot__num">06</span><span class="shot__title">Password entry</span></div>
+      <p class="shot__sub">The fallback when there is no phone. Knob picks a character, OK enters it. Slow but foolproof.</p>
+      <div class="stage"><div class="bezel"><div class="panel">
+        <div class="hd"><span class="back">&#9664;</span>Sehgal-Home <span class="count">password</span></div>
+        <div class="pw">
+          <div class="field">Cli&#8226;&#8226;&#8226;<span class="cur"></span></div>
+          <div class="mode"><span class="on">abc</span><span>ABC</span><span>123</span><span>!@#</span><span>PAUSE switches</span></div>
+          <div class="strip" id="pwstrip"></div>
+        </div>
+      </div></div></div>
+      <div class="strip">
+        <svg width="250" height="92" viewBox="0 0 250 92" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink)">
+            <circle cx="40" cy="32" r="26"/><line x1="40" y1="32" x2="40" y2="10"/>
+            <circle cx="112" cy="32" r="26"/><line x1="112" y1="32" x2="126" y2="14"/>
+            <rect x="152" y="18" width="28" height="28" rx="6"/><rect x="186" y="18" width="28" height="28" rx="6"/><rect x="220" y="18" width="28" height="28" rx="6"/>
+          </g>
+          <g font-family="Azeret Mono, monospace" font-size="9" text-anchor="middle" fill="currentColor" style="color:var(--text-dim)">
+            <text x="40" y="76">SCROLL</text><text x="40" y="87">push = OK</text><text x="112" y="76">VOLUME</text>
+            <text x="166" y="60">OK</text><text x="200" y="60">PAUSE</text><text x="234" y="60">STOP</text>
+          </g>
+        </svg>
+        <div class="legend">
+          <b>SCROLL</b><span>Slide the character strip. The big tile is the current pick.</span>
+          <b>PUSH / OK</b><span>Enter the character. DEL and DONE are tiles at the end of the strip.</span>
+          <b>PAUSE</b><span>Cycle abc / ABC / 123 / symbols.</span>
+          <b>STOP</b><span>Cancel, back to the network list.</span>
+          <b>SHOW</b><span>Last typed character stays visible for 2 s, then turns into a dot.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 7 ============ -->
+    <section class="shot" style="--i:6">
+      <div class="shot__label"><span class="shot__num">07</span><span class="shot__title">Bluetooth</span></div>
+      <p class="shot__sub">Headphones or hearing aids. The transmitter module scans; the ESP32 only draws the list.</p>
+      <div class="stage"><div class="bezel"><div class="panel">
+        <div class="hd"><span class="back">&#9664;</span>BLUETOOTH <span class="count">Searching&hellip;</span></div>
+        <div class="rows">
+          <div class="row sep">Put your headphones in pairing mode</div>
+          <div class="row sel"><span class="dot"></span>Dad's AirPods <span class="val">Connected</span></div>
+          <div class="row"><span class="dot" style="background:#b7791f"></span>Sony WH-1000XM4 <span class="val">Paired</span></div>
+          <div class="row"><span class="dot" style="background:#c9c3b6"></span>JBL Flip 6 <span class="val">New</span></div>
+          <div class="row">Sound output <span class="val">Bluetooth &#9654;</span></div>
+          <div class="row">Forget this device</div>
+          <div class="row sep">Back to settings</div>
+        </div>
+        <div class="sb"><div class="thumb" style="top:0;height:100%"></div></div>
+      </div></div></div>
+      <div class="strip">
+        <svg width="250" height="92" viewBox="0 0 250 92" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink)">
+            <circle cx="40" cy="32" r="26"/><line x1="40" y1="32" x2="40" y2="10"/>
+            <circle cx="112" cy="32" r="26"/><line x1="112" y1="32" x2="126" y2="14"/>
+            <rect x="152" y="18" width="28" height="28" rx="6"/><rect x="186" y="18" width="28" height="28" rx="6"/><rect x="220" y="18" width="28" height="28" rx="6"/>
+          </g>
+          <g font-family="Azeret Mono, monospace" font-size="9" text-anchor="middle" fill="currentColor" style="color:var(--text-dim)">
+            <text x="40" y="76">SCROLL</text><text x="40" y="87">push = OK</text><text x="112" y="76">VOLUME</text>
+            <text x="166" y="60">OK</text><text x="200" y="60">PAUSE</text><text x="234" y="60">STOP</text>
+          </g>
+        </svg>
+        <div class="legend">
+          <b>SCROLL</b><span>Move through devices the transmitter can see.</span>
+          <b>PUSH / OK</b><span>Connect to the device and switch Sound output to Bluetooth.</span>
+          <b>PAUSE</b><span>Search again.</span>
+          <b>STOP</b><span>Back to Settings.</span>
+          <b>AUTO</b><span>When paired headphones switch on, the box reconnects and the speaker mutes. Switch off and sound returns to the speaker.</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ RULES ============ -->
+  <div class="rules">
+    <div class="ve-card ve-card--hero">
+      <div class="ve-card__label">Design rules</div>
+      <ul class="rule-list">
+        <li><b>Type sizes</b><span>Lists 24 px, episode titles 19 px, Now Playing title 23 px, time 24 px. Smallest anything on screen: 14 px metadata. On this panel 24 px is about 3.7 mm tall, the size of newspaper headline text at arm's length.</span></li>
+        <li><b>Rows per screen</b><span>8 channels, 4 episodes. Never fewer; a shorter list feels like something is missing.</span></li>
+        <li><b>Highlight</b><span>Whole row inverts to <code>#b5431b</code> with white text. One highlight, always visible, never a thin outline.</span></li>
+        <li><b>One rule for OK</b><span>OK opens whatever is highlighted. Channel list to episode list to playing. Pushing the scroll knob is the same as OK.</span></li>
+        <li><b>Stop</b><span>Stops audio, saves the position, returns to the channel list. It is also the only "back" he needs.</span></li>
+        <li><b>Resume</b><span>Every episode remembers where he stopped. OK on a partly played episode picks up there. The thin bar under the row shows how far he got.</span></li>
+        <li><b>Pause anywhere</b><span>Pause from any screen resumes the last episode, so he can wander the lists while listening.</span></li>
+        <li><b>No touch</b><span>The panel has a touch layer. It is disabled. Knobs and buttons only, so nothing happens from a stray hand.</span></li>
+        <li><b>Volume</b><span>Overlay slides up on the first click of the knob and hides 2 s after the last. It never covers the title.</span></li>
+        <li><b>Settings</b><span>Live past the last channel and behind a 3 s hold on STOP. Same rows, same knob, same OK. Nothing in Settings stops the audio.</span></li>
+        <li><b>Wi-Fi</b><span>QR route first: phone joins the box's hotspot, picks the network, types the password. On-box character entry is the fallback, meant for the installer.</span></li>
+        <li><b>Bluetooth</b><span>Output only, to headphones or hearing aids. Paired headphones reconnect on power-up and the speaker mutes automatically. Nothing to do on the box after the first pairing.</span></li>
+      </ul>
+    </div>
+    <div class="ve-card">
+      <div class="ve-card__label">Panel and hardware</div>
+      <div class="specs">
+        <div class="kpi"><div class="v">480 × 320</div><div class="k">Sunton ESP32-3248S035R, 3.5 in, ST7796</div></div>
+        <div class="kpi"><div class="v">73 × 49 mm</div><div class="k">Active area, about 166 ppi</div></div>
+        <div class="kpi"><div class="v">2 × EC11</div><div class="k">Scroll knob with push. Volume on B10K pot</div></div>
+        <div class="kpi"><div class="v">3 × 30 mm</div><div class="k">Arcade buttons: OK, PAUSE, STOP. To buy</div></div>
+        <div class="kpi"><div class="v">MAX98357A</div><div class="k">I2S amp + 50 mm driver in a sealed chamber. Owned</div></div>
+        <div class="kpi"><div class="v">PCM5102A</div><div class="k">I2S DAC, line-out feed for Bluetooth. Owned</div></div>
+        <div class="kpi"><div class="v">KCX_BT_EMITTER</div><div class="k">Bluetooth 5 transmitter, UART controlled. To buy, about $8</div></div>
+        <div class="kpi"><div class="v">LVGL 9</div><div class="k">Montserrat 24 / 20 / 16 and QR widget built in</div></div>
+        <div class="kpi"><div class="v">USB-C 5 V</div><div class="k">Mains powered, no battery to die. Adapter owned</div></div>
+        <div class="kpi"><div class="v">Spike first</div><div class="k">The Sunton's ESP32 has no PSRAM. Prove stream + screen together before any enclosure work</div></div>
+      </div>
+      <p style="font-size:13px;color:var(--text-dim);margin:16px 0 0">Channel names and episodes here are samples to set the type. Real content comes from the resolver on the Mac Studio, which turns 20 feed URLs into these lists.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const chans = [
+  ['NPR News Now','#16213a'],['BBC Global News','#7a1f1f'],['The Daily','#1f1f1f'],['Up First','#2f5d8a'],
+  ['Marketplace','#2f7d4f'],['Fresh Air','#b7791f'],['This American Life','#b5431b'],['Radiolab','#5a3e8a'],
+  ['Planet Money','#2f7d4f'],['The Bill Simmons Podcast','#1f1f1f'],['Pardon My Take','#7a1f1f'],['Pod Save America','#2f5d8a'],
+  ['Freakonomics Radio','#b7791f'],['Stuff You Should Know','#16213a'],['99% Invisible','#1f1f1f'],['The Rewatchables','#5a3e8a'],
+  ['Conan O’Brien Needs a Friend','#b5431b'],['SmartLess','#2f5d8a'],['WTF with Marc Maron','#7a1f1f'],['Hidden Brain','#2f7d4f']
+];
+const chanEl = document.getElementById('chan');
+chans.slice(0, 8).forEach((c, i) => {
+  const d = document.createElement('div'); d.className = 'row' + (i === 6 ? ' sel' : '');
+  const initials = c[0].split(' ').filter(w => /[A-Za-z0-9]/.test(w[0])).slice(0,3).map(w => w[0].toUpperCase()).join('');
+  d.innerHTML = `<span class="art" style="background:${c[1]}">${initials}</span><span>${c[0]}</span>`;
+  chanEl.appendChild(d);
+});
+const eps = [
+  {d:['OCT','9'], t:'857: Seven Minutes Underwater', dur:'61 min', isNew:true, prog:0},
+  {d:['OCT','2'], t:'856: The Call Nobody Wanted to Make', dur:'58 min', isNew:false, prog:22},
+  {d:['SEP','25'], t:'855: What Happened to the Town That Voted to Disappear', dur:'64 min', isNew:false, prog:100, sel:true},
+  {d:['SEP','18'], t:'854: Ask Me One More Time', dur:'57 min', isNew:false, prog:0},
+];
+const epEl = document.getElementById('eps');
+eps.forEach(e => {
+  const d = document.createElement('div'); d.className = 'ep' + (e.sel ? ' sel' : '');
+  d.innerHTML = `<div class="date"><span>${e.d[0]}</span><b>${e.d[1]}</b></div>
+    <div class="body"><div class="title">${e.t}</div>
+    <div class="meta">${e.isNew ? '<span class="new">NEW</span>' : (e.prog === 100 ? '<span>Played</span>' : (e.prog ? '<span>' + e.prog + '% played</span>' : ''))}<span class="dur">${e.dur}</span></div></div>
+    ${e.prog && e.prog < 100 ? `<div class="prog"><i style="width:${e.prog}%"></i></div>` : ''}`;
+  epEl.appendChild(d);
+});
+// password strip: lower-case alphabet with the current pick enlarged
+const strip = document.getElementById('pwstrip');
+'fghijklmno'.split('').forEach((ch, i) => {
+  const s = document.createElement('span'); s.textContent = ch; if (i === 3) s.className = 'cur'; strip.appendChild(s);
+});
+['DEL', 'DONE'].forEach(t => { const s = document.createElement('span'); s.className = 'act'; s.textContent = t; strip.appendChild(s); });
+// decorative QR pattern (deterministic, not scannable)
+const qr = document.getElementById('qr');
+let seed = 7;
+const finder = (r, c) => (r < 7 && c < 7) || (r < 7 && c > 7) || (r > 7 && c < 7);
+for (let r = 0; r < 15; r++) for (let c = 0; c < 15; c++) {
+  const i = document.createElement('i');
+  let b;
+  if (finder(r, c)) { const rr = r % 8, cc = c % 8; const rr2 = r > 7 ? r - 8 : r, cc2 = c > 7 ? c - 8 : c;
+    b = rr2 === 0 || rr2 === 6 || cc2 === 0 || cc2 === 6 || (rr2 >= 2 && rr2 <= 4 && cc2 >= 2 && cc2 <= 4); }
+  else { seed = (seed * 1103515245 + 12345) & 0x7fffffff; b = (seed >> 8) & 1; }
+  if (b) i.className = 'b'; qr.appendChild(i);
+}
+const segs = document.getElementById('segs');
+for (let i = 0; i < 16; i++) { const s = document.createElement('i'); if (i < 11) s.className = 'on'; segs.appendChild(s); }
+
+// zoom
+document.querySelectorAll('#zoom button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#zoom button').forEach(x => x.classList.remove('on')); b.classList.add('on');
+  const z = parseFloat(b.dataset.z);
+  document.querySelectorAll('.bezel').forEach(bz => { bz.style.transform = `scale(${z})`; bz.parentElement.style.height = (344 * z + 8) + 'px'; });
+}));
+// state toggles for screen 3
+const np = document.getElementById('np');
+document.querySelectorAll('.state-toggle button').forEach(b => b.addEventListener('click', () => {
+  const st = b.dataset.st;
+  if (st === 'novol') { np.classList.toggle('novol'); b.classList.toggle('on', np.classList.contains('novol')); return; }
+  np.classList.toggle('paused', st === 'paused');
+  document.querySelectorAll('.state-toggle button[data-st="playing"],.state-toggle button[data-st="paused"]').forEach(x => x.classList.toggle('on', x.dataset.st === st));
+}));
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+name: release
+
+# Push a tag like v0.2.0 and this builds the firmware, writes manifest.json with the
+# sha256 the device verifies, and attaches both to a GitHub Release. Devices fetch
+# releases/latest/download/manifest.json on every boot.
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            .pio
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+      - run: pip install platformio
+
+      - name: Version from tag
+        id: v
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        env:
+          FW_VERSION: ${{ steps.v.outputs.version }}
+        run: pio run
+
+      - name: Package
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cp .pio/build/sunton35/firmware.bin out/firmware.bin
+          SHA=$(sha256sum out/firmware.bin | cut -d' ' -f1)
+          SIZE=$(stat -c %s out/firmware.bin)
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/firmware.bin"
+          printf '{\n  "version": "%s",\n  "url": "%s",\n  "sha256": "%s",\n  "size": %s,\n  "built": "%s"\n}\n' \
+            "$VERSION" "$URL" "$SHA" "$SIZE" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > out/manifest.json
+          cat out/manifest.json
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            out/firmware.bin
+            out/manifest.json
+          generate_release_notes: true
