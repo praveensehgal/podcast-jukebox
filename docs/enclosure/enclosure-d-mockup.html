@@ -166,13 +166,14 @@ const rad = P.theta * Math.PI / 180, sT = Math.sin(rad), cT = Math.cos(rad);
 P.Hb = P.lip + P.L * sT;
 P.D = P.T + P.L * cT;
 P.stack = P.board.glass + P.board.pcb + P.board.back;
+P.chin = P.D - (P.lip - P.plinth) * Math.tan(rad);   // lip angled back under the body, perpendicular to the face
 
 // ===================== geometry helpers =====================
 const v2 = (x, y) => ({ x, y });
 const sub = (a, b) => v2(a.x - b.x, a.y - b.y), add = (a, b) => v2(a.x + b.x, a.y + b.y), mul = (a, k) => v2(a.x * k, a.y * k);
 const len = a => Math.hypot(a.x, a.y), nrm = a => mul(a, 1 / len(a)), dot = (a, b) => a.x * b.x + a.y * b.y;
 function profile() {   // (depth, height), CCW
-  return [v2(0, P.plinth), v2(P.D, P.plinth), v2(P.D, P.lip), v2(P.T, P.Hb), v2(0, P.Hb)];
+  return [v2(0, P.plinth), v2(P.chin, P.plinth), v2(P.D, P.lip), v2(P.T, P.Hb), v2(0, P.Hb)];
 }
 const radii = () => [P.r.bottom, P.r.bottom, P.r.faceLip, P.r.top, P.r.back];
 function inset(pts, d) {
@@ -237,7 +238,7 @@ function drawSection(ck) {
   const pr = profile(), inner = inset(pr, P.wall);
   let s = `<path d="${svgPath(pr, radii(), X, Y)}" fill="${css('--shell-fill')}" stroke="${css('--shell-edge')}" stroke-width="2.5"/>`;
   s += `<path d="${svgPath(inner, radii().map(r => Math.max(0.6, r - P.wall)), X, Y)}" fill="${css('--surface')}" stroke="${css('--shell-edge')}" stroke-width="1" stroke-dasharray="4 3"/>`;
-  s += `<rect x="${X(P.plinthInset)}" y="${Y(P.plinth)}" width="${(P.D - 2 * P.plinthInset) * S}" height="${P.plinth * S}" fill="${css('--shell-edge')}"/>`;
+  s += `<rect x="${X(P.plinthInset)}" y="${Y(P.plinth)}" width="${(P.chin - 2 * P.plinthInset) * S}" height="${P.plinth * S}" fill="${css('--shell-edge')}"/>`;
   const band = (from, to, along0, along1, col, op = 1) => {
     const a = facePt(along0, from), b = facePt(along1, from), c = facePt(along1, to), d = facePt(along0, to);
     return `<polygon points="${[a, b, c, d].map(p => `${X(p.x)},${Y(p.y)}`).join(' ')}" fill="${col}" opacity="${op}"/>`;
@@ -362,8 +363,8 @@ const Z = z => z - P.D / 2;
 function rrect(w, h, r) { const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
   s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r); s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
   s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r); s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y); return s; }
-const plGeo = new THREE.ExtrudeGeometry(rrect(P.W - 2 * P.plinthInset, P.D - 2 * P.plinthInset, 6), { depth: P.plinth + 0.5, bevelEnabled: false });
-plGeo.rotateX(-Math.PI / 2);
+const plGeo = new THREE.ExtrudeGeometry(rrect(P.W - 2 * P.plinthInset, P.chin - 2 * P.plinthInset, 6), { depth: P.plinth + 0.5, bevelEnabled: false });
+plGeo.rotateX(-Math.PI / 2); plGeo.translate(0, 0, P.chin / 2 - P.D / 2);
 const plinth = new THREE.Mesh(plGeo, plinthMat); plinth.castShadow = true; scene.add(plinth);
 
 const faceBasis = new THREE.Matrix4().makeBasis(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, sT, -cT), new THREE.Vector3(0, cT, sT));
