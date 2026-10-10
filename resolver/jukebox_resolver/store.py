@@ -100,8 +100,10 @@ class Store:
             return None
         return float(row["fetched_at"]), json.loads(row["episodes"])
 
-    def put_feed(self, feed: str, episodes: list[dict[str, Any]]) -> float:
-        fetched_at = time.time()
+    def put_feed(
+        self, feed: str, episodes: list[dict[str, Any]], fetched_at: float | None = None
+    ) -> float:
+        fetched_at = time.time() if fetched_at is None else fetched_at
         with self._lock, self._conn:
             self._conn.execute(
                 "INSERT INTO feed_cache (feed, fetched_at, episodes) VALUES (?, ?, ?) "

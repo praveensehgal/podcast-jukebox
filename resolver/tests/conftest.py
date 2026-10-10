@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 FEED_URL = "https://example.org/feed.xml"
@@ -92,9 +94,13 @@ class FakeFetcher:
         self,
         docs: dict[str, str] | None = None,
         resolves: dict[str, str] | None = None,
+        delay: float = 0.0,
+        fail_resolve: set[str] | None = None,
     ) -> None:
         self.docs = docs or {}
         self.resolves = resolves or {}
+        self.delay = delay
+        self.fail_resolve = fail_resolve or set()
         self.get_calls: list[str] = []
         self.caps: list[int] = []
         self.resolve_calls: list[str] = []
@@ -105,12 +111,18 @@ class FakeFetcher:
 
         self.get_calls.append(url)
         self.caps.append(max_bytes)
+        if self.delay:
+            await asyncio.sleep(self.delay)
         if url not in self.docs:
             raise FetchError(f"GET {url}: 404")
         return self.docs[url]
 
     async def resolve(self, url: str) -> str:
+        from jukebox_resolver.fetcher import FetchError
+
         self.resolve_calls.append(url)
+        if url in self.fail_resolve:
+            raise FetchError("probe failed")
         return self.resolves.get(url, url)
 
     async def aclose(self) -> None:

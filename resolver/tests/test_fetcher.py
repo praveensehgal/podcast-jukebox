@@ -1,19 +1,23 @@
+import asyncio
+import gzip
+
 import httpx
 import pytest
 
+from jukebox_resolver import fetcher as fetcher_module
 from jukebox_resolver.fetcher import (
     USER_AGENT,
     BlockedUrlError,
     Fetcher,
     FetchError,
-    is_http_url,
-    is_public_ip,
 )
 
 PUBLIC = "93.184.216.34"
+PUBLIC6 = "2606:2800:220:1:248:1893:25c8:1946"
 HOSTS = {
     "cdn.test": [PUBLIC],
-    "feeds.test": [PUBLIC, "2606:2800:220:1:248:1893:25c8:1946"],
+    "feeds.test": [PUBLIC6, PUBLIC],
+    "six.test": [PUBLIC6],
     "internal.test": ["10.0.0.5"],
     "mixed.test": [PUBLIC, "192.168.1.9"],
     "localhost": ["127.0.0.1"],
@@ -26,39 +30,79 @@ def fake_resolver(host: str) -> list[str]:
     return HOSTS[host]
 
 
-def make(handler, **kw) -> Fetcher:
-    return Fetcher(transport=httpx.MockTransport(handler), resolver=fake_resolver, **kw)
+def make(handler) -> Fetcher:
+    return Fetcher(transport=httpx.MockTransport(handler), resolver=fake_resolver)
+
+
+def resp(status: int, body: bytes = b"", headers: dict[str, str] | None = None) -> httpx.Response:
+    """Like a real transport: the body arrives as an unread stream, never pre-buffered."""
+    return httpx.Response(status, headers=headers, stream=httpx.ByteStream(body))
 
 
 def _transport(hops: int = 2, head_status: int = 200, get_status: int = 200):
-    seen: list[tuple[str, str]] = []
+    """Handler records (method, Host header, path); the URL host is the pinned IP."""
+    seen: list[tuple[str, str, str]] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
-        seen.append((request.method, str(request.url)))
+        seen.append((request.method, request.headers["host"], request.url.path))
         path = request.url.path
         if path.startswith("/hop"):
             n = int(path[4:])
             if n < hops:
-                return httpx.Response(302, headers={"location": f"/hop{n + 1}"})
+                return resp(302, headers={"location": f"/hop{n + 1}"})
             status = head_status if request.method == "HEAD" else get_status
-            return httpx.Response(status, content=b"audio")
+            return resp(status, b"audio")
         if path == "/feed.xml":
-            return httpx.Response(200, text="<rss/>")
+            return resp(200, b"<rss/>")
         if path == "/loop":
-            return httpx.Response(302, headers={"location": "https://cdn.test/loop"})
+            return resp(302, headers={"location": "https://cdn.test/loop"})
         if path == "/ftp":
-            return httpx.Response(302, headers={"location": "ftp://cdn.test/x"})
+            return resp(302, headers={"location": "ftp://cdn.test/x"})
         if path == "/to-internal":
-            return httpx.Response(302, headers={"location": "http://internal.test/secret"})
+            return resp(302, headers={"location": "http://internal.test/secret"})
         if path == "/to-port":
-            return httpx.Response(302, headers={"location": "https://cdn.test:8443/x"})
+            return resp(302, headers={"location": "https://cdn.test:8443/x"})
         if path == "/big":
-            return httpx.Response(200, content=b"x" * (300 * 1024))
+            return resp(200, b"x" * (300 * 1024))
         if path == "/lies":
-            return httpx.Response(200, headers={"content-length": "9999999"}, content=b"")
-        return httpx.Response(404)
+            return resp(200, b"", {"content-length": "9999999"})
+        if path == "/gz":
+            body = gzip.compress(b"<rss>ok</rss>")
+            return resp(200, body, {"content-encoding": "gzip"})
+        if path == "/bomb":
+            body = gzip.compress(b"\0" * (4 * 1024 * 1024))  # ~4 KB on the wire
+            return resp(200, body, {"content-encoding": "gzip"})
+        if path == "/br":
+            return resp(200, b"x", {"content-encoding": "br"})
+        return resp(404)
 
     return handler, seen
+
+
+@pytest.mark.asyncio
+async def test_connection_is_pinned_to_vetted_ip_with_host_and_sni():
+    pinned: list[tuple[str, str, str | None]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        pinned.append(
+            (request.url.host, request.headers["host"], request.extensions.get("sni_hostname"))
+        )
+        return resp(200, b"<rss/>")
+
+    fetcher = make(handler)
+    await fetcher.get_text("https://cdn.test/feed.xml", 1024)
+    await fetcher.get_text("http://cdn.test/feed.xml", 1024)
+    await fetcher.get_text("https://feeds.test/feed.xml", 1024)  # dual stack -> IPv4
+    await fetcher.get_text("https://six.test/feed.xml", 1024)  # IPv6 only
+    await fetcher.get_text(f"https://{PUBLIC}/feed.xml", 1024)  # literal IP, no SNI
+    assert pinned == [
+        (PUBLIC, "cdn.test", "cdn.test"),
+        (PUBLIC, "cdn.test", None),
+        (PUBLIC, "feeds.test", "feeds.test"),
+        (PUBLIC6, "six.test", "six.test"),
+        (PUBLIC, PUBLIC, None),
+    ]
+    await fetcher.aclose()
 
 
 @pytest.mark.asyncio
@@ -66,7 +110,7 @@ async def test_resolve_follows_relative_redirects_with_head():
     handler, seen = _transport(hops=2)
     fetcher = make(handler)
     assert await fetcher.resolve("https://cdn.test/hop0") == "https://cdn.test/hop2"
-    assert [m for m, _ in seen] == ["HEAD", "HEAD", "HEAD"]
+    assert [m for m, _, _ in seen] == ["HEAD", "HEAD", "HEAD"]
     await fetcher.aclose()
 
 
@@ -75,7 +119,7 @@ async def test_resolve_falls_back_to_get_then_original():
     handler, seen = _transport(hops=1, head_status=405)
     fetcher = make(handler)
     assert await fetcher.resolve("https://cdn.test/hop0") == "https://cdn.test/hop1"
-    assert [m for m, _ in seen][-1] == "GET"
+    assert seen[-1][0] == "GET"
     handler2, _ = _transport(hops=1, head_status=405, get_status=403)
     fetcher2 = make(handler2)
     assert await fetcher2.resolve("https://cdn.test/hop0") == "https://cdn.test/hop0"
@@ -103,7 +147,9 @@ async def test_redirect_to_private_host_or_port_is_never_fetched():
     assert await fetcher.resolve("https://cdn.test/to-port") == "https://cdn.test/to-port"
     with pytest.raises(FetchError, match="redirect refused"):
         await fetcher.get_text("https://cdn.test/to-internal", 1024)
-    assert all("internal.test" not in url and ":8443" not in url for _, url in seen)
+    with pytest.raises(FetchError, match="redirect refused"):
+        await fetcher.get_text("https://cdn.test/to-port", 1024)
+    assert all(host == "cdn.test" for _, host, _ in seen)
     await fetcher.aclose()
 
 
@@ -149,7 +195,7 @@ async def test_guard_blocks(url):
 async def test_guard_allows_public_hosts_and_standard_ports():
     handler, _ = _transport()
     fetcher = make(handler)
-    for url in ("https://cdn.test:443/feed.xml", "http://cdn.test:80/feed.xml", "https://feeds.test/feed.xml"):
+    for url in ("https://cdn.test:443/feed.xml", "http://cdn.test:80/feed.xml"):
         assert await fetcher.get_text(url, 1024) == "<rss/>"
     assert await fetcher.resolve(f"http://{PUBLIC}/hop2") == f"http://{PUBLIC}/hop2"
     with pytest.raises(FetchError, match="cannot resolve"):
@@ -158,7 +204,7 @@ async def test_guard_allows_public_hosts_and_standard_ports():
 
 
 @pytest.mark.asyncio
-async def test_body_cap():
+async def test_body_cap_before_buffering_and_after_decoding():
     handler, _ = _transport()
     fetcher = make(handler)
     assert len(await fetcher.get_text("https://cdn.test/big", 400 * 1024)) == 300 * 1024
@@ -166,53 +212,62 @@ async def test_body_cap():
         await fetcher.get_text("https://cdn.test/big", 256 * 1024)
     with pytest.raises(FetchError, match="exceeds"):
         await fetcher.get_text("https://cdn.test/lies", 256 * 1024)
+    assert await fetcher.get_text("https://cdn.test/gz", 1024) == "<rss>ok</rss>"
+    with pytest.raises(FetchError, match="exceeds"):
+        await fetcher.get_text("https://cdn.test/bomb", 1024 * 1024)  # 4 KB wire, 4 MB decoded
+    with pytest.raises(FetchError, match="content-encoding"):
+        await fetcher.get_text("https://cdn.test/br", 1024)
     await fetcher.aclose()
 
 
 @pytest.mark.asyncio
-async def test_get_text_sets_user_agent_and_raises_on_error():
+async def test_get_text_headers_and_errors():
     handler, _ = _transport()
-    captured: list[str] = []
+    captured: list[tuple[str, str]] = []
 
     def wrapped(request: httpx.Request) -> httpx.Response:
-        captured.append(request.headers["user-agent"])
+        captured.append((request.headers["user-agent"], request.headers["accept-encoding"]))
         return handler(request)
 
     fetcher = make(wrapped)
     assert await fetcher.get_text("https://cdn.test/feed.xml", 1024) == "<rss/>"
-    assert captured == [USER_AGENT]
+    assert captured == [(USER_AGENT, "identity")]
     with pytest.raises(FetchError):
         await fetcher.get_text("https://cdn.test/missing", 1024)
     await fetcher.aclose()
 
 
-@pytest.mark.parametrize(
-    ("ip", "public"),
-    [
-        (PUBLIC, True),
-        ("2606:4700::1111", True),
-        ("127.0.0.1", False),
-        ("10.0.0.1", False),
-        ("172.31.255.255", False),
-        ("192.168.0.1", False),
-        ("169.254.169.254", False),
-        ("100.127.0.1", False),
-        ("224.0.0.1", False),
-        ("::1", False),
-        ("fe80::1%en0", False),
-        ("fd00::1", False),
-        ("::ffff:192.168.1.1", False),
-        ("not-an-ip", False),
-    ],
-)
-def test_is_public_ip(ip, public):
-    assert is_public_ip(ip) is public
+@pytest.mark.asyncio
+async def test_time_budgets(monkeypatch):
+    monkeypatch.setattr(fetcher_module, "GET_BUDGET_S", 0.05)
+    monkeypatch.setattr(fetcher_module, "RESOLVE_BUDGET_S", 0.05)
+
+    async def slow(_: httpx.Request) -> httpx.Response:
+        await asyncio.sleep(0.5)
+        return resp(200, b"<rss/>")
+
+    fetcher = make(slow)
+    with pytest.raises(FetchError, match="budget"):
+        await fetcher.get_text("https://cdn.test/feed.xml", 1024)
+    assert await fetcher.resolve("https://cdn.test/a.mp3") == "https://cdn.test/a.mp3"
+    await fetcher.aclose()
 
 
-def test_is_http_url():
-    assert is_http_url("https://a.b/c")
-    assert is_http_url("http://a:80")
-    assert not is_http_url("https://a:8443/")
-    assert not is_http_url("ftp://a")
-    assert not is_http_url("https://")
-    assert not is_http_url("not a url")
+@pytest.mark.asyncio
+async def test_probe_concurrency_is_bounded_service_wide():
+    in_flight = 0
+    peak = 0
+
+    async def handler(_: httpx.Request) -> httpx.Response:
+        nonlocal in_flight, peak
+        in_flight += 1
+        peak = max(peak, in_flight)
+        await asyncio.sleep(0.01)
+        in_flight -= 1
+        return resp(200)
+
+    fetcher = make(handler)
+    urls = [f"https://cdn.test/{i}.mp3" for i in range(30)]
+    assert await asyncio.gather(*(fetcher.resolve(u) for u in urls)) == urls
+    assert peak <= fetcher_module.PROBE_CONCURRENCY
+    await fetcher.aclose()

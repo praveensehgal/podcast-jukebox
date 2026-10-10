@@ -1,80 +1,37 @@
-"""Outbound HTTP with an SSRF guard, manual redirect following and capped bodies."""
+"""Outbound HTTP: manual redirect following, capped bodies, bounded probes and budgets."""
 
 from __future__ import annotations
 
 import asyncio
-import ipaddress
 import logging
-import socket
-from collections.abc import Callable
-from urllib.parse import SplitResult, urljoin, urlsplit
+import zlib
+from urllib.parse import urljoin
 
 import httpx
 
 from . import __version__
-from .config import HTTP_TIMEOUT_S, MAX_REDIRECTS, RESOLVE_TIMEOUT_S
+from .config import (
+    GET_BUDGET_S,
+    HTTP_TIMEOUT_S,
+    MAX_REDIRECTS,
+    PROBE_CONCURRENCY,
+    RESOLVE_BUDGET_S,
+    RESOLVE_TIMEOUT_S,
+)
+from .guard import (  # noqa: F401 - re-exported for callers and tests
+    BlockedUrlError,
+    FetchError,
+    GuardedTransport,
+    Resolver,
+    check_url,
+    is_http_url,
+    is_public_ip,
+    system_resolver,
+)
 
 log = logging.getLogger("jukebox.fetcher")
 USER_AGENT = f"podcast-jukebox-resolver/{__version__}"
-ALLOWED_PORTS = (80, 443)
 REDIRECT_CODES = (301, 302, 303, 307, 308)
-CGNAT = ipaddress.ip_network("100.64.0.0/10")
-
-Resolver = Callable[[str], list[str]]
-
-
-class FetchError(Exception):
-    """An upstream download failed (network, status, size, redirect chain)."""
-
-
-class BlockedUrlError(ValueError):
-    """The URL is refused by policy: scheme, port, or a non-public host."""
-
-
-def is_public_ip(text: str) -> bool:
-    try:
-        ip = ipaddress.ip_address(text.split("%", 1)[0])
-    except ValueError:
-        return False
-    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
-        ip = ip.ipv4_mapped
-    if isinstance(ip, ipaddress.IPv4Address) and ip in CGNAT:
-        return False
-    return not (
-        ip.is_private
-        or ip.is_loopback
-        or ip.is_link_local
-        or ip.is_multicast
-        or ip.is_reserved
-        or ip.is_unspecified
-    )
-
-
-def is_http_url(url: str) -> bool:
-    try:
-        check_url(url)
-    except ValueError:
-        return False
-    return True
-
-
-def check_url(url: str) -> SplitResult:
-    """Static checks: http(s) scheme, a host, and port 80/443 only. Raises BlockedUrlError."""
-    try:
-        parts = urlsplit(url)
-        port = parts.port
-    except ValueError as exc:
-        raise BlockedUrlError("malformed url") from exc
-    if parts.scheme not in ("http", "https") or not parts.hostname:
-        raise BlockedUrlError("url must be http(s) with a host")
-    if port is not None and port not in ALLOWED_PORTS:
-        raise BlockedUrlError("only ports 80 and 443 are allowed")
-    return parts
-
-
-def system_resolver(host: str) -> list[str]:
-    infos = socket.getaddrinfo(host, None, type=socket.SOCK_STREAM)
-    return sorted({info[4][0] for info in infos})
 
 
 def _location(resp: httpx.Response, current: str) -> str | None:
@@ -85,93 +42,113 @@ def _location(resp: httpx.Response, current: str) -> str | None:
 
 
 class Fetcher:
-    """One httpx client. Never auto-follows; every hop is re-checked against the guard."""
+    """One httpx client behind the guard. Never auto-follows; every hop is re-checked."""
 
     def __init__(
         self,
         transport: httpx.AsyncBaseTransport | None = None,
         resolver: Resolver | None = None,
     ) -> None:
-        self._resolver = resolver or system_resolver
+        inner = transport or httpx.AsyncHTTPTransport(
+            retries=0, limits=httpx.Limits(max_connections=16, max_keepalive_connections=8)
+        )
         self._client = httpx.AsyncClient(
-            headers={"User-Agent": USER_AGENT},
+            headers={"User-Agent": USER_AGENT, "Accept-Encoding": "identity"},
             timeout=httpx.Timeout(HTTP_TIMEOUT_S),
             follow_redirects=False,
-            transport=transport,
+            transport=GuardedTransport(inner, resolver or system_resolver),
         )
+        self._probes = asyncio.Semaphore(PROBE_CONCURRENCY)
 
     async def aclose(self) -> None:
         await self._client.aclose()
 
-    async def guard(self, url: str) -> None:
-        """Raise BlockedUrlError if the URL or any address its host resolves to is not public."""
-        host = check_url(url).hostname or ""
-        try:
-            ipaddress.ip_address(host)
-            addresses = [host]
-        except ValueError:
-            try:
-                addresses = await asyncio.to_thread(self._resolver, host)
-            except (OSError, ValueError) as exc:
-                raise FetchError(f"cannot resolve {host}") from exc
-        if not addresses or not all(is_public_ip(a) for a in addresses):
-            raise BlockedUrlError(f"host {host} is not a public address")
-
-    async def _hop(self, target: str) -> str:
-        try:
-            await self.guard(target)
-        except BlockedUrlError as exc:
-            raise FetchError(f"redirect refused: {exc}") from exc
-        return target
-
     async def get_text(self, url: str, max_bytes: int) -> str:
-        """GET a text document, following at most MAX_REDIRECTS hops, body capped."""
-        await self.guard(url)
+        """GET a text document within GET_BUDGET_S, at most MAX_REDIRECTS hops, body capped."""
+        try:
+            async with asyncio.timeout(GET_BUDGET_S):
+                return await self._get_text(url, max_bytes)
+        except TimeoutError as exc:
+            raise FetchError(f"GET {url}: exceeded {GET_BUDGET_S} s budget") from exc
+
+    async def _get_text(self, url: str, max_bytes: int) -> str:
         current = url
-        for _ in range(MAX_REDIRECTS + 1):
+        for hop in range(MAX_REDIRECTS + 1):
             try:
                 async with self._client.stream("GET", current) as resp:
                     target = _location(resp, current)
                     if target is None:
                         resp.raise_for_status()
                         return await _read_capped(resp, max_bytes)
+            except BlockedUrlError as exc:
+                if hop == 0:
+                    raise
+                raise FetchError(f"redirect refused: {exc}") from exc
             except httpx.HTTPError as exc:
                 raise FetchError(f"GET {current}: {exc.__class__.__name__}: {exc}") from exc
-            current = await self._hop(target)
+            current = target
         raise FetchError(f"GET {url}: more than {MAX_REDIRECTS} redirects")
 
     async def resolve(self, url: str) -> str:
-        """Final URL after redirects. HEAD first, then a GET probe, else the input URL."""
-        await self.guard(url)
-        final = await self._probe("HEAD", url)
-        if final is None:
-            final = await self._probe("GET", url)
+        """Final URL after redirects. HEAD first, then a GET probe, else the input URL.
+
+        Bounded by PROBE_CONCURRENCY in-flight probes and RESOLVE_BUDGET_S per call.
+        """
+        check_url(url)
+        try:
+            async with self._probes, asyncio.timeout(RESOLVE_BUDGET_S):
+                final = await self._probe("HEAD", url)
+                if final is None:
+                    final = await self._probe("GET", url)
+        except TimeoutError:
+            log.info("resolve %s exceeded %s s budget", url, RESOLVE_BUDGET_S)
+            return url
         return final or url
 
     async def _probe(self, method: str, url: str) -> str | None:
         current = url
-        for _ in range(MAX_REDIRECTS + 1):
+        for hop in range(MAX_REDIRECTS + 1):
             try:
                 async with self._client.stream(method, current, timeout=RESOLVE_TIMEOUT_S) as resp:
                     target = _location(resp, current)
                     if target is None:
                         return current if resp.status_code < 400 else None
-                current = await self._hop(target)
-            except (httpx.HTTPError, FetchError) as exc:
-                log.info("resolve %s %s stopped: %s", method, current, exc)
+            except BlockedUrlError as exc:
+                if hop == 0:
+                    raise
+                log.info("resolve %s %s refused hop: %s", method, current, exc)
                 return None
+            except httpx.HTTPError as exc:
+                log.info("resolve %s %s stopped: %s", method, current, exc.__class__.__name__)
+                return None
+            current = target
         return None
 
 
+def _decoder(encoding: str) -> zlib._Decompress | None:
+    if encoding in ("", "identity"):
+        return None
+    if encoding in ("gzip", "x-gzip"):
+        return zlib.decompressobj(16 + zlib.MAX_WBITS)
+    if encoding == "deflate":
+        return zlib.decompressobj()
+    raise FetchError(f"unsupported content-encoding {encoding!r}")
+
+
 async def _read_capped(resp: httpx.Response, max_bytes: int) -> str:
+    """Read the raw body, refusing before any byte past max_bytes is buffered or decoded."""
     declared = resp.headers.get("content-length", "")
     if declared.isdigit() and int(declared) > max_bytes:
         raise FetchError(f"body of {declared} bytes exceeds the {max_bytes} byte cap")
-    chunks: list[bytes] = []
-    total = 0
-    async for chunk in resp.aiter_bytes():
-        total += len(chunk)
-        if total > max_bytes:
+    decoder = _decoder(resp.headers.get("content-encoding", "").strip().lower())
+    out = bytearray()
+    raw_total = 0
+    async for raw in resp.aiter_raw():
+        raw_total += len(raw)
+        if raw_total > max_bytes:
             raise FetchError(f"body exceeds the {max_bytes} byte cap")
-        chunks.append(chunk)
-    return b"".join(chunks).decode(resp.encoding or "utf-8", errors="replace")
+        data = decoder.decompress(raw, max_bytes - len(out) + 1) if decoder else raw
+        if len(out) + len(data) > max_bytes or (decoder and decoder.unconsumed_tail):
+            raise FetchError(f"decoded body exceeds the {max_bytes} byte cap")
+        out += data
+    return bytes(out).decode(resp.encoding or "utf-8", errors="replace")

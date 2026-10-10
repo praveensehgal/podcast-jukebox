@@ -64,8 +64,31 @@ redirect `Location` it meets on the way is checked before any request is made:
 - a public host that redirects to a refused one stops the chain: `/resolve` returns the
   input URL unchanged and feed fetches fail with 502.
 
-Refused input URLs answer 400 `url refused: <reason>`. Response bodies are streamed and
-capped: feeds at 5 MB, `channels.md` at 256 KB; anything larger is a 502.
+Refused input URLs answer 400 `url refused: <reason>`.
+
+The connection is pinned to the address that passed the check: the host is resolved
+once, the socket goes to that literal IP, and the `Host` header and TLS SNI carry the
+original hostname so certificates still verify. A second DNS answer (DNS rebinding)
+cannot move the connection.
+
+## Resource limits
+
+- Response bodies are read from the raw stream and refused before any byte past the
+  cap is buffered or decoded: feeds 5 MB, `channels.md` 256 KB. `Accept-Encoding:
+  identity` is requested; gzip/deflate bodies a server sends anyway are inflated with the
+  same cap applied to the decoded size, other encodings are refused. Oversize is a 502.
+- At most 6 redirect hops per fetch or probe; 15 s connect/read timeouts; 8 s per probe.
+- Time budgets: a feed or channels GET including redirects 30 s, one `/resolve` call
+  20 s, a feed refresh 35 s. Past the budget: 502 for fetches, the input URL for
+  `/resolve`.
+- Redirect probes are limited to 8 in flight service-wide, and only the episodes a
+  request actually returns are resolved (results are cached with the feed), so a
+  `limit=50` request costs at most 50 probes once per 15 minutes.
+- A feed that fails (unreachable, oversize, unparseable, refused) is negative-cached
+  for 60 s: repeated device requests get the same 502 (or 400) immediately, with no
+  new upstream fetch; a stale copy, if any, is served instead. Refreshes are
+  single-flight per feed, so concurrent requests share one upstream fetch, and other
+  feeds are never blocked by a slow one.
 
 ## API
 
