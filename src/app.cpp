@@ -171,13 +171,24 @@ static void playButton() {
     if (hasCurrent) beginPlayback(current, String(currentChannel), playingChannel);
 }
 
+// Playback gave up. Never leave a screen with nothing to tap: say so, then go back to
+// the list, where tapping the episode (or PLAY) resumes from the same second.
+static void lostStream() {
+    for (auto& e : browsing) if (e.id == current.id) e.posS = current.posS;
+    audio_out::stop();
+    active = false;   // hasCurrent stays
+    sleepAt = 0;
+    ui::noticeShow("Lost the stream.", "Tap the episode to try again.");
+    delay(2500);
+    (browsingChannel == playingChannel && !browsing.empty()) ? showEpisodes() : showChannels();
+}
+
 static void skip(int32_t delta) {
     if (!active || !current.sizeBytes || !current.durationS) return;   // no byte map, no seek
     int32_t t = max<int32_t>(0, (int32_t)audio_out::positionSeconds() + delta);
     if (!audio_out::seekTo(t) && !startAudio(t)) {   // second try from scratch
         Serial.println("[app] skip failed");
-        active = false;
-        ui::noticeShow("Lost the stream.", "Press PLAY to try again.");
+        lostStream();
         return;
     }
     current.posS = t;
@@ -212,10 +223,7 @@ static void streamEnded() {
         Serial.printf("[app] stream dropped at %u s, reopened\n", (unsigned)pos);
         return;
     }
-    audio_out::stop();
-    active = false;   // hasCurrent stays: PLAY resumes from current.posS
-    sleepAt = 0;
-    ui::noticeShow("Lost the stream.", "Press PLAY to try again.");
+    lostStream();
 }
 
 static void benchPlay() {

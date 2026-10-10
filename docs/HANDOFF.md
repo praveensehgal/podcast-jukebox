@@ -50,7 +50,10 @@ overridable in NVS `ota/resolver`. It must be restarted after pulling this commi
 
 ## Constraints (do not re-litigate)
 
-- Touch does navigation; PLAY / PAUSE / STOP are physical. Lists page with arrows, never
+- Every screen must be usable by touch alone. Now Playing carries its own Pause and Stop
+  buttons, and no notice may end on "press a button": Praveen played an episode before
+  the switches were wired and could not stop it (2026-10-10).
+- Touch does navigation; PLAY / PAUSE / STOP are also physical. Lists page with arrows, never
   scroll. Decision 004, which replaces the knobs of 001.
 - Audio comes through the resolver's `/stream` over plain HTTP. The device must not open
   a TLS session while playing: TLS (56-75 KB) plus the decoder (34 KB) plus the ring
@@ -82,6 +85,9 @@ overridable in NVS `ota/resolver`. It must be restarted after pulling this commi
   /restart, /info and /param pages are answered with 404 by a handler registered ahead
   of the library's. Built and flashed, but nobody has joined the hotspot and requested
   those paths to see the 404.
+- The on-screen Pause and Stop buttons under a finger (added after the tour; the same
+  events pass from the serial keys). The touch mockup in docs/screens still shows the
+  older Now Playing layout with four buttons and a state pill.
 - The three physical switches, and whether GPIO 18/19/23 behave with real switches.
 - Joining a network from the on-screen keyboard, and the non-blocking phone-setup portal
   started from the Wi-Fi screen (the boot-time portal was proven; this path is new).

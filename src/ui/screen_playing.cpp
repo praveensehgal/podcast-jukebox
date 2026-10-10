@@ -1,5 +1,7 @@
-// 03 Now Playing: art, title, time, state pill, progress, and the four touch buttons
-// a hand reaches for: back 30 s, volume down, volume up, forward 30 s.
+// 03 Now Playing: art, title, time, volume bars, progress, and six touch buttons:
+// back 30 s, pause/resume, stop, forward 30 s, volume down, volume up. Pause and stop
+// are also the physical top buttons, but the screen must never be a dead end without
+// them (Praveen, 2026-10-10: "i tested playing and now i can't stop it").
 
 #include "theme.h"
 #include "ui.h"
@@ -9,8 +11,8 @@ namespace ui {
 
 static lv_obj_t* scr = nullptr;
 static lv_obj_t* timeLbl = nullptr;
-static lv_obj_t* pill = nullptr;
-static lv_obj_t* pillText = nullptr;
+static lv_obj_t* pauseBtn = nullptr;
+static lv_obj_t* pauseIcon = nullptr;
 static lv_obj_t* fill = nullptr;
 static lv_obj_t* vol[8] = {};
 static uint32_t lastPos = 0xFFFFFFFF;
@@ -23,11 +25,17 @@ static void fmtTime(char* out, size_t n, uint32_t s) {
     else snprintf(out, n, "%u:%02u", (unsigned)(s / 60), (unsigned)(s % 60));
 }
 
-static lv_obj_t* control(lv_obj_t* parent, int x, int w, bool dark, const char* label, input::Kind k) {
-    lv_obj_t* b = widgets::tap(parent, x, 0, w, 72, dark ? theme::header() : theme::rail(), k);
+static const int kBtnW = 70, kBtnGap = 7, kBtnH = 72;
+
+// One control in the bottom row; `slot` is 0..5 left to right. Returns the label.
+static lv_obj_t* control(lv_obj_t* row, int slot, lv_color_t bg, lv_color_t fg, const char* label, input::Kind k,
+                         lv_obj_t** button = nullptr) {
+    lv_obj_t* b = widgets::tap(row, slot * (kBtnW + kBtnGap), 0, kBtnW, kBtnH, bg, k);
     lv_obj_set_style_radius(b, 12, 0);
-    lv_obj_center(widgets::text(b, dark ? theme::fontRow() : theme::fontTitle(), dark ? theme::white() : theme::header(), label));
-    return b;
+    lv_obj_t* l = widgets::text(b, theme::fontTitle(), fg, label);
+    lv_obj_center(l);
+    if (button) *button = b;
+    return l;
 }
 
 void playingShow(const char* channelName, const char* initials, uint32_t artColor, const resolver::Episode& e) {
@@ -50,25 +58,23 @@ void playingShow(const char* channelName, const char* initials, uint32_t artColo
 
     timeLbl = widgets::text(scr, theme::fontRow(), theme::text(), "0:00 / --:--");
     lv_obj_set_pos(timeLbl, 16, 168);
-    pill = widgets::box(scr, theme::kW - 16 - 112, 166, 112, 30, theme::green());
-    lv_obj_set_style_radius(pill, 15, 0);
-    pillText = widgets::text(pill, theme::fontMed(), theme::white(), "PLAYING");
-    lv_obj_center(pillText);
+    for (int i = 0; i < 8; i++) {   // volume, right of the time
+        int h = 10 + i * 3;
+        vol[i] = widgets::box(scr, theme::kW - 16 - (8 - i) * 9, 198 - h, 6, h, theme::track());
+        lv_obj_set_style_radius(vol[i], 2, 0);
+    }
     lv_obj_t* bar = widgets::box(scr, 16, 206, kBarW, 10, theme::track());
     lv_obj_set_style_radius(bar, 5, 0);
     fill = widgets::box(bar, 0, 0, 0, 10, theme::header());
     lv_obj_set_style_radius(fill, 5, 0);
 
-    lv_obj_t* row = widgets::box(scr, 12, theme::kH - 12 - 72, theme::kW - 24, 72, theme::bg());
-    control(row, 0, 88, false, LV_SYMBOL_LEFT " 30", input::Kind::SkipBack);
-    control(row, 96, 88, true, LV_SYMBOL_MINUS, input::Kind::VolDown);
-    for (int i = 0; i < 8; i++) {
-        int h = 18 + i * 5;
-        vol[i] = widgets::box(row, 192 + 6 + i * 9, 72 - 10 - h, 6, h, theme::track());
-        lv_obj_set_style_radius(vol[i], 2, 0);
-    }
-    control(row, 272, 88, true, LV_SYMBOL_PLUS, input::Kind::VolUp);
-    control(row, 368, 88, false, "30 " LV_SYMBOL_RIGHT, input::Kind::SkipFwd);
+    lv_obj_t* row = widgets::box(scr, 12, theme::kH - 12 - kBtnH, theme::kW - 24, kBtnH, theme::bg());
+    control(row, 0, theme::rail(), theme::header(), LV_SYMBOL_LEFT " 30", input::Kind::SkipBack);
+    pauseIcon = control(row, 1, theme::header(), theme::white(), LV_SYMBOL_PAUSE, input::Kind::Pause, &pauseBtn);
+    control(row, 2, theme::hilite(), theme::white(), LV_SYMBOL_STOP, input::Kind::Stop);
+    control(row, 3, theme::rail(), theme::header(), "30 " LV_SYMBOL_RIGHT, input::Kind::SkipFwd);
+    control(row, 4, theme::rail(), theme::header(), LV_SYMBOL_MINUS, input::Kind::VolDown);
+    control(row, 5, theme::rail(), theme::header(), LV_SYMBOL_PLUS, input::Kind::VolUp);
 
     lastPos = 0xFFFFFFFF;
     lastVol = -1;
@@ -85,9 +91,9 @@ void playingUpdate(uint32_t posS, uint32_t durS, bool paused, uint8_t volume16) 
         fmtTime(b, sizeof(b), durS);
         snprintf(t, sizeof(t), "%s / %s", a, durS ? b : "--:--");
         lv_label_set_text(timeLbl, t);
-        lv_label_set_text(pillText, paused ? "PAUSED" : "PLAYING");
-        lv_obj_set_style_bg_color(pill, paused ? theme::amber() : theme::green(), 0);
-        lv_obj_center(pillText);
+        lv_label_set_text(pauseIcon, paused ? LV_SYMBOL_PLAY : LV_SYMBOL_PAUSE);   // what a tap will do
+        lv_obj_set_style_bg_color(pauseBtn, paused ? theme::amber() : theme::header(), 0);
+        lv_obj_center(pauseIcon);
         lv_obj_set_width(fill, durS ? (int)(kBarW * min(posS, durS) / durS) : 0);
     }
     int steps = (volume16 + 1) / 2;   // 0..16 -> 0..8 bars

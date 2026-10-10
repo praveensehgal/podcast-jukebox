@@ -30,7 +30,7 @@ void episodesShow(const char* channelName, const std::vector<resolver::Episode>&
                   const String& playingId, bool playing);
 int episodesPage();
 
-// 03 Now Playing. Taps: Back, SkipBack, VolDown, VolUp, SkipFwd.
+// 03 Now Playing. Taps: Back, SkipBack, Pause, Stop, SkipFwd, VolDown, VolUp.
 void playingShow(const char* channelName, const char* initials, uint32_t artColor, const resolver::Episode& e);
 void playingUpdate(uint32_t posS, uint32_t durS, bool paused, uint8_t volume16);
 
