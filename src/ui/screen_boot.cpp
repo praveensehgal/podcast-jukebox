@@ -6,6 +6,7 @@
 
 #include "theme.h"
 #include "ui.h"
+#include "widgets.h"
 
 namespace ui {
 
@@ -14,9 +15,7 @@ static lv_obj_t* status[6];
 static int statusCount = 0;
 
 void bootShow(const char* version) {
-    scr = lv_obj_create(nullptr);
-    lv_obj_set_style_bg_color(scr, theme::bg(), 0);
-    lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
+    scr = widgets::screen();
 
     lv_obj_t* bar = lv_obj_create(scr);
     lv_obj_remove_style_all(bar);
@@ -47,12 +46,12 @@ void bootShow(const char* version) {
         lv_label_set_text(status[i], "");
     }
     statusCount = 0;
-    lv_screen_load(scr);
+    widgets::show(scr);
     lv_refr_now(nullptr);
 }
 
 void bootStatus(const char* line) {
-    if (!scr) return;
+    if (!scr || lv_screen_active() != scr) return;
     if (statusCount < 6) {
         lv_label_set_text(status[statusCount++], line);
     } else {

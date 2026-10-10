@@ -1,5 +1,7 @@
 #include "http_get.h"
 
+#include <algorithm>
+
 #include <esp_crt_bundle.h>
 
 #include "version.h"
@@ -76,6 +78,7 @@ bool text(const String& url, String& body, size_t maxBytes) {
     char buf[512];
     int n;
     body = "";
+    body.reserve(min(maxBytes, (size_t)8192));
     while ((n = esp_http_client_read(c, buf, sizeof(buf))) > 0 && body.length() < maxBytes) {
         body.concat(buf, n);
     }

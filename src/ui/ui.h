@@ -5,6 +5,7 @@
 
 #include "../channels.h"
 #include "../input.h"
+#include "../resolver_client.h"
 
 // Screen set from the mockup. Each screen owns its LVGL objects; `show` builds it
 // on a fresh lv screen and loads it, `handle` consumes one input event and returns
@@ -19,6 +20,20 @@ void bootStatus(const char* line);
 void channelsShow(const std::vector<channels::Channel>& list, int selected);
 bool channelsHandle(const input::Event& e);
 int channelsSelected();
+// Initials + colour for a channel name, shared by the list tiles and Now Playing art.
+void channelArt(const char* name, char* initialsOut, uint32_t& colorOut);
+
+// Screen 02: episode list for one channel.
+void episodesShow(const char* channelName, const std::vector<resolver::Episode>& list, int selected);
+bool episodesHandle(const input::Event& e);
+int episodesSelected();
+
+// Screen 03: Now Playing. Update once a second from the app loop.
+void playingShow(const char* channelName, const char* initials, uint32_t artColor, const char* episodeTitle);
+void playingUpdate(uint32_t posS, uint32_t durS, bool paused);
+
+// Short full-screen notice (fetching, errors). Any input returns to the caller.
+void noticeShow(const char* line1, const char* line2);
 
 // Transient volume bar, drawn over whichever screen is active. Hides after 2 s.
 void volumeFlash(int level);  // 0..16

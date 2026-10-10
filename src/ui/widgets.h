@@ -9,6 +9,11 @@
 // handful of labels each would eat the 40 KB LVGL heap on a board with no PSRAM.
 namespace widgets {
 
+// Create a fresh screen with the theme background. Pair with show(): screens are
+// built, shown, and the previous one deleted, so the 40 KB LVGL pool never fills.
+lv_obj_t* screen();
+void show(lv_obj_t* scr);
+
 // Header: title left, optional count right ("7 of 20"), optional back glyph.
 struct Header {
     lv_obj_t* bar;

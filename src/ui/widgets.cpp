@@ -29,6 +29,21 @@ static lv_obj_t* label(lv_obj_t* parent, const lv_font_t* f, lv_color_t c) {
     return l;
 }
 
+// ---------- screens ----------
+
+lv_obj_t* screen() {
+    lv_obj_t* s = lv_obj_create(nullptr);
+    lv_obj_set_style_bg_color(s, theme::bg(), 0);
+    lv_obj_set_style_bg_opa(s, LV_OPA_COVER, 0);
+    return s;
+}
+
+void show(lv_obj_t* scr) {
+    lv_obj_t* old = lv_screen_active();
+    lv_screen_load(scr);
+    if (old && old != scr) lv_obj_delete(old);
+}
+
 // ---------- header ----------
 
 Header header(lv_obj_t* parent, const char* title, bool back) {

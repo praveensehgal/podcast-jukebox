@@ -30,7 +30,7 @@ static const uint32_t kMaxImage = 1900 * 1024;  // min_spiffs OTA slot size
 
 String manifestUrl() {
     Preferences p;
-    p.begin("ota", true);
+    p.begin("ota", false);
     String url = p.getString("manifest", "");
     p.end();
     return url.length() ? url : String(kDefaultManifest);

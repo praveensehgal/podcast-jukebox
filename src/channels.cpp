@@ -20,7 +20,7 @@ static const size_t kMaxBytes = 16 * 1024;
 
 String sourceUrl() {
     Preferences p;
-    p.begin("ota", true);
+    p.begin("ota", false);
     String url = p.getString("channels", "");
     p.end();
     return url.length() ? url : String(kDefaultSource);

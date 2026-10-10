@@ -18,7 +18,7 @@ static char artBuf[8][4];
 static const uint32_t kPalette[] = {0x16213A, 0x7A1F1F, 0x2F5D8A, 0x2F7D4F, 0xB7791F,
                                     0xB5431B, 0x5A3E8A, 0x1F1F1F};
 
-static void initials(const char* name, char* out) {
+void channelArt(const char* name, char* out, uint32_t& color) {
     int n = 0;
     bool word = true;
     for (const char* p = name; *p && n < 3; p++) {
@@ -27,30 +27,44 @@ static void initials(const char* name, char* out) {
         word = false;
     }
     out[n] = '\0';
+    uint32_t h = 0;
+    for (const char* p = name; *p; p++) h = h * 31 + (unsigned char)*p;
+    color = kPalette[h % 8];
 }
 
 static void provide(int index, widgets::RowData& d) {
     const channels::Channel& c = (*data)[index];
     d.name = c.name.c_str();
     int slot = index % 8;
-    initials(c.name.c_str(), artBuf[slot]);
+    channelArt(c.name.c_str(), artBuf[slot], d.artColor);
     d.art = artBuf[slot];
-    uint32_t h = 0;
-    for (const char* p = c.name.c_str(); *p; p++) h = h * 31 + (unsigned char)*p;
-    d.artColor = kPalette[h % 8];
+}
+
+void noticeShow(const char* line1, const char* line2) {
+    lv_obj_t* s = widgets::screen();
+    lv_obj_t* a = lv_label_create(s);
+    lv_obj_set_style_text_font(a, theme::fontRow(), 0);
+    lv_obj_set_style_text_color(a, theme::text(), 0);
+    lv_label_set_text(a, line1);
+    lv_obj_align(a, LV_ALIGN_CENTER, 0, -20);
+    lv_obj_t* b = lv_label_create(s);
+    lv_obj_set_style_text_font(b, theme::fontTitle(), 0);
+    lv_obj_set_style_text_color(b, theme::dim(), 0);
+    lv_label_set_text(b, line2 ? line2 : "");
+    lv_obj_align(b, LV_ALIGN_CENTER, 0, 24);
+    widgets::show(s);
+    lv_refr_now(nullptr);
 }
 
 void channelsShow(const std::vector<channels::Channel>& list, int selected) {
     data = &list;
-    scr = lv_obj_create(nullptr);
-    lv_obj_set_style_bg_color(scr, theme::bg(), 0);
-    lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
+    scr = widgets::screen();
     hdr = widgets::header(scr, "CHANNELS", false);
     widgets::list(lst, scr, theme::kRowsVisible, &hdr);
     lst.provider = provide;
     lst.selected = selected;
     widgets::listSetTotal(lst, (int)list.size());
-    lv_screen_load(scr);
+    widgets::show(scr);
 }
 
 bool channelsHandle(const input::Event& e) {

@@ -12,7 +12,9 @@
 
 namespace audio_out {
 
-static const size_t kBufferBytes = 24 * 1024;
+// 16 KB = 1 s at 128 kbps. The HTTP client holds another 4 KB and downloads run well
+// ahead of real time on Wi-Fi; 24 KB tipped the heap into bad_alloc at play start.
+static const size_t kBufferBytes = 16 * 1024;
 
 // The stock output allocates the I2S channel and its DMA descriptors inside
 // begin(), which the decoder calls at play time, after TLS, the ring buffer and the
