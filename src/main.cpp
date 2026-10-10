@@ -6,8 +6,10 @@
 // device shipped from now on can already be updated remotely.
 
 #include <Arduino.h>
+#include <Preferences.h>
 #include <WiFi.h>
 #include <WiFiManager.h>
+#include <esp_random.h>
 
 #include "channels.h"
 #include "ota.h"
@@ -16,16 +18,26 @@
 static const char* kSetupSsid = "Jukebox-Setup";
 static const uint32_t kPortalTimeoutS = 180;
 
-// Per-device key for the setup hotspot: "jb-" + last three MAC bytes. WiFiManager
-// registers its /update firmware-upload route unconditionally, so the hotspot must
-// not be open. The key is printed on serial and, once the screen exists, embedded in
-// the Wi-Fi screen's QR code, so nobody ever types it.
+// Per-device key for the setup hotspot. WiFiManager registers its /update
+// firmware-upload route unconditionally, so the hotspot must not be open. The key is
+// random, generated once from the hardware RNG and kept in NVS; it is never derived
+// from anything the AP broadcasts. It is printed on serial and, once the screen
+// exists, embedded in the Wi-Fi screen's QR code, so nobody ever types it.
 static String setupKey() {
-    uint8_t mac[6];
-    WiFi.macAddress(mac);
-    char key[12];
-    snprintf(key, sizeof(key), "jb-%02x%02x%02x", mac[3], mac[4], mac[5]);
-    return String(key);
+    Preferences p;
+    p.begin("net", false);
+    String key = p.getString("setupkey", "");
+    if (key.length() < 12) {
+        static const char* alphabet = "abcdefghjkmnpqrstuvwxyz23456789";  // no 0/O/1/l/i
+        const size_t n = strlen(alphabet);
+        char buf[13];
+        for (int i = 0; i < 12; i++) buf[i] = alphabet[esp_random() % n];
+        buf[12] = '\0';
+        key = String(buf);
+        p.putString("setupkey", key);
+    }
+    p.end();
+    return key;
 }
 
 static bool connectWifi() {
