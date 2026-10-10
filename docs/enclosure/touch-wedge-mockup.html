@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jukebox Touch Wedge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root, [data-theme="light"] {
+  --bg:#f5f3ee; --surface:#fffdf9; --surface-2:#ebe7df; --text:#1e1b16; --dim:#6b655a; --border:rgba(0,0,0,.09);
+  --accent:#b5431b; --accent-dim:rgba(181,67,27,.10); --ink:#16213a; --ink-dim:rgba(22,33,58,.10);
+  --shell:#e4e0d6; --shell-dark:#c9c3b4; --shell-edge:#8a8475; --panel:#f7f5ef; --screen:#16213a; --knob:#2b2b2b; --btn:#b5431b; --grille:#3a3a3a;
+  --shadow:0 8px 28px rgba(40,30,10,.10);
+}
+[data-theme="dark"] {
+  --bg:#17150f; --surface:#211e17; --surface-2:#2a261d; --text:#f2ede3; --dim:#a69e8d; --border:rgba(255,255,255,.09);
+  --accent:#e2693a; --accent-dim:rgba(226,105,58,.14); --ink:#c9d4f0; --ink-dim:rgba(201,212,240,.12); --shadow:0 8px 28px rgba(0,0,0,.45);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#17150f; --surface:#211e17; --surface-2:#2a261d; --text:#f2ede3; --dim:#a69e8d; --border:rgba(255,255,255,.09);
+  --accent:#e2693a; --accent-dim:rgba(226,105,58,.14); --ink:#c9d4f0; --ink-dim:rgba(201,212,240,.12); --shadow:0 8px 28px rgba(0,0,0,.45);
+}}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Libre Franklin',system-ui,sans-serif;line-height:1.5;background-image:radial-gradient(900px 400px at 100% -10%,var(--accent-dim),transparent 60%)}
+.wrap{max-width:1180px;margin:0 auto;padding:40px 24px 80px}
+.eyebrow{font:600 11px Inconsolata,monospace;letter-spacing:2px;text-transform:uppercase;color:var(--accent)}
+h1{font-size:42px;font-weight:800;letter-spacing:-.6px;line-height:1.05;margin:6px 0 10px}
+h2{font-size:22px;font-weight:700;margin:0 0 4px}
+.lead{font-size:18px;color:var(--dim);max-width:780px;margin:0 0 26px}
+section{margin:0 0 30px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px 24px;box-shadow:var(--shadow)}
+.card.hero{background:color-mix(in srgb,var(--surface) 92%,var(--accent) 8%);border-color:color-mix(in srgb,var(--border) 40%,var(--accent) 60%)}
+.card.flat{box-shadow:none}
+.sub{color:var(--dim);font-size:15px;margin:0 0 14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.grid3{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:20px;align-items:start}
+figure{margin:0}figure svg{width:100%;height:auto;display:block}
+figcaption{font:500 12px Inconsolata,monospace;color:var(--dim);margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th{font:600 11px Inconsolata,monospace;letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:0}
+td.n{font-family:Inconsolata,monospace;font-weight:600}
+#dims th:nth-child(1){width:24%}#dims th:nth-child(2){width:34%}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:15px}.kv b{font-family:Inconsolata,monospace;font-size:13px;color:var(--accent)}
+.callout{border-left:4px solid var(--accent);background:var(--accent-dim);padding:12px 16px;border-radius:0 10px 10px 0;margin:12px 0}
+.anim{opacity:0;animation:up .5s ease both;animation-delay:calc(var(--i,0)*.08s)}
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.anim{animation:none;opacity:1}}
+@media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}h1{font-size:32px}.wrap{padding:24px 16px 60px}}
+.theme{position:fixed;top:18px;right:18px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px;cursor:pointer;color:var(--text);z-index:5}
+[data-theme="light"] .moon,[data-theme="dark"] .sun{display:none}
+</style>
+</head>
+<body>
+<button class="theme" onclick="var r=document.documentElement;r.setAttribute('data-theme',r.getAttribute('data-theme')==='dark'?'light':'dark')" aria-label="Toggle theme">
+  <svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+  <svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+</button>
+<div class="wrap">
+  <div class="eyebrow">Podcast Jukebox · enclosure concept C, touch wedge · for approval</div>
+  <h1>A touch wedge the size of the board</h1>
+  <p class="lead">The sloped face is the screen with a thin bezel and nothing else, like the printer display on your desk. Every control lives on the glass: big rows to tap, a bar along the bottom for PAUSE, STOP and volume. The speaker fires out of the tall vertical back. Footprint is a hand's width.</p>
+
+  <section class="grid3">
+    <div class="card hero anim" style="--i:0">
+      <h2>Face (looking straight at the slope)</h2>
+      <p class="sub" id="frontSub"></p>
+      <figure><svg id="front" viewBox="0 0 560 560" role="img" aria-label="Face to scale"></svg></figure>
+    </div>
+    <div class="card anim" style="--i:1">
+      <h2>Side profile</h2>
+      <p class="sub">The wedge. Face leans back so it reads from a chair.</p>
+      <figure><svg id="side" viewBox="0 0 420 460" role="img" aria-label="Side profile to scale"></svg></figure>
+    </div>
+    <div class="card anim" style="--i:2">
+      <h2>Back (vertical face)</h2>
+      <p class="sub">Speaker grille, USB slot at the bottom. The driver sits behind, under the board.</p>
+      <figure><svg id="back" viewBox="0 0 420 460" role="img" aria-label="Back view to scale"></svg></figure>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="card anim" style="--i:3">
+      <h2>Dimensions</h2>
+      <table id="dims"><tr><th>Item</th><th>Value</th><th>Why</th></tr></table>
+    </div>
+    <div class="card flat anim" style="--i:4">
+      <h2>The prototype print</h2>
+      <div class="kv">
+        <b>what</b><span>The outer wedge only: sloped face with the window, top, both sides, and the back with the grille. Open underneath, so you can drop the board in from below and look at it.</span>
+        <b>walls</b><span>1.2 mm, two perimeters, no infill. A look-and-feel piece.</span>
+        <b>print</b><span>Back face down on the H2C, no supports: the back is vertical and flat, the slope and top become overhangs well under 45°. About 70 minutes at 0.2 mm, about 30 g.</span>
+        <b>controls</b><span>None on the shell. The resistive touch layer does it all; it wants a firm press, which suits older fingers that capacitive glass ignores.</span>
+        <b>after approval</b><span>Final version adds board rails, a speaker cage, knob bosses, a bottom plate with feet, 2.4 mm walls, and the orange bezel ring as a second colour.</span>
+      </div>
+      <div class="callout"><b>Decide now:</b> the face angle and the bezel width. That is all that is left to choose.</div>
+    </div>
+  </section>
+</div>
+
+<script>
+// ---- single source of truth (mm) ----
+const D = {
+  W: 118, depth: 52, backH: 70, frontH: 10,
+  wall: 1.2, corner: 4,
+  screen: { w: 76, h: 51 },
+  pcb: { w: 101.5, h: 54.9 },
+  bezelTop: 14,
+  speaker: { d: 50, holes: 3, pitch: 5 },
+  knobCap: 24, knobHole: 7.2,
+  btnCap: 16, btnHole: 16.4,
+  controls: [],
+};
+D.faceLen = Math.hypot(D.depth, D.backH - D.frontH);
+D.angle = Math.atan2(D.backH - D.frontH, D.depth) * 180 / Math.PI;
+D.rowY = 0;
+const c = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function dim(x1,y1,x2,y2,label,o){
+  const col = c('--dim');
+  const mid = o==='h' ? `<text x="${(x1+x2)/2}" y="${y1-6}" text-anchor="middle" font-family="Inconsolata" font-size="13" fill="${col}">${label}</text>`
+                      : `<text x="${x1+8}" y="${(y1+y2)/2+4}" font-family="Inconsolata" font-size="13" fill="${col}">${label}</text>`;
+  return `<g stroke="${col}" stroke-width="1.2"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>
+    ${o==='h'?`<line x1="${x1}" y1="${y1-6}" x2="${x1}" y2="${y1+6}"/><line x1="${x2}" y1="${y1-6}" x2="${x2}" y2="${y1+6}"/>`
+             :`<line x1="${x1-6}" y1="${y1}" x2="${x1+6}" y2="${y1}"/><line x1="${x1-6}" y1="${y2}" x2="${x1+6}" y2="${y2}"/>`}</g>${mid}`;
+}
+function front() {
+  const svg = document.getElementById('front'); const S = 3.9;
+  const ox = (560 - D.W*S)/2 - 10, oy = 40;
+  const px = mm => ox + mm*S, py = mm => oy + mm*S;
+  let s = `<rect x="${px(0)}" y="${py(0)}" width="${D.W*S}" height="${D.faceLen*S}" rx="${D.corner*S}" fill="${c('--shell')}" stroke="${c('--shell-edge')}" stroke-width="3"/>`;
+  const sx = (D.W - D.screen.w)/2, sy = D.bezelTop, sc = D.screen;
+  s += `<rect x="${px(sx)}" y="${py(sy)}" width="${sc.w*S}" height="${sc.h*S}" rx="3" fill="${c('--screen')}"/>`;
+  s += `<rect x="${px(sx+1.5)}" y="${py(sy+1.5)}" width="${(sc.w-3)*S}" height="${(sc.h-3)*S}" rx="2" fill="${c('--panel')}"/>`;
+  s += `<rect x="${px(sx+1.5)}" y="${py(sy+1.5)}" width="${(sc.w-3)*S}" height="${5.4*S}" fill="${c('--screen')}"/>`;
+  s += `<text x="${px(sx+4)}" y="${py(sy+5.6)}" font-family="Inconsolata" font-size="12" fill="#fff" font-weight="700">CHANNELS</text>`;
+  const rows = ['NPR News Now','Up First','The Daily','BBC Global News'];
+  rows.forEach((r,i)=>{ const y = py(sy+7.2+i*8.6); const sel = i===2;
+    if (sel) s += `<rect x="${px(sx+1.5)}" y="${y}" width="${(sc.w-3)*S}" height="${8.6*S}" fill="${c('--accent')}"/>`;
+    else s += `<line x1="${px(sx+1.5)}" y1="${y+8.6*S}" x2="${px(sx+sc.w-1.5)}" y2="${y+8.6*S}" stroke="#e3dfd5" stroke-width="1"/>`;
+    s += `<text x="${px(sx+5)}" y="${y+8.6*S/2+6}" font-family="Libre Franklin" font-size="16" font-weight="600" fill="${sel?'#fff':'#141414'}">${r}</text>`; });
+  const by = py(sy+sc.h-1.5-9.5);
+  s += `<rect x="${px(sx+1.5)}" y="${by}" width="${(sc.w-3)*S}" height="${9.5*S}" fill="#ece7dc"/>`;
+  [['PAUSE',0.2],['STOP',0.5],['VOL −',0.72],['VOL +',0.9]].forEach(([t,f])=>{ s += `<text x="${px(sx+1.5)+(sc.w-3)*S*f}" y="${by+9.5*S/2+5}" text-anchor="middle" font-family="Inconsolata" font-size="12" font-weight="700" fill="#16213a">${t}</text>`; });
+  D.controls.forEach(k => {
+    const x = px(k.x), y = py(D.rowY);
+    if (k.kind==='knob') {
+      s += `<circle cx="${x}" cy="${y}" r="${D.knobCap/2*S}" fill="${c('--knob')}"/><circle cx="${x}" cy="${y}" r="${D.knobCap/2*S-5}" fill="none" stroke="#555" stroke-width="2"/>`;
+      s += `<line x1="${x}" y1="${y-D.knobCap/2*S+3}" x2="${x}" y2="${y-D.knobCap/2*S+14}" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`;
+    } else {
+      s += `<circle cx="${x}" cy="${y}" r="${D.btnCap/2*S}" fill="${c('--btn')}"/><circle cx="${x}" cy="${y}" r="${D.btnCap/2*S-3}" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2"/>`;
+    }
+    s += `<text x="${x}" y="${py(D.rowY)+D.knobCap/2*S+14}" text-anchor="middle" font-family="Inconsolata" font-size="10" font-weight="700" fill="${c('--shell-edge')}">${k.label}</text>`;
+  });
+  s += dim(px(0), py(D.faceLen)+30, px(D.W), py(D.faceLen)+30, `${D.W} mm`, 'h');
+  s += dim(px(D.W)+26, py(0), px(D.W)+26, py(D.faceLen), `${D.faceLen.toFixed(0)} mm along the slope`, 'v');
+  svg.innerHTML = s;
+  document.getElementById('frontSub').textContent = `${D.W} mm wide, ${D.faceLen.toFixed(0)} mm along the slope. Window ${D.screen.w} × ${D.screen.h} mm, nothing else on the face.`;
+}
+function side() {
+  const svg = document.getElementById('side'); const S = 3.6;
+  const ox = 70, oy = 50;
+  const X = mm => ox + mm*S, Y = mm => oy + (D.backH - mm)*S;
+  const pts = [[0,0],[D.depth,0],[D.depth,D.frontH],[0,D.backH]].map(p=>`${X(p[0])},${Y(p[1])}`).join(' ');
+  let s = `<polygon points="${pts}" fill="${c('--shell')}" stroke="${c('--shell-edge')}" stroke-width="3" stroke-linejoin="round"/>`;
+  const t = D.faceLen, ux = D.depth/t, uy = (D.backH-D.frontH)/t;
+  const along = a => [D.depth - ux*(t-a), D.frontH + uy*(t-a)];   // point on the face, a mm down the slope from the top
+  const a0 = D.bezelTop - 2, a1 = D.bezelTop + D.pcb.h;
+  const p0 = along(a0), p1 = along(a1);
+  const nx = -uy, ny = ux;  // inward normal
+  s += `<line x1="${X(p0[0]+nx*3)}" y1="${Y(p0[1]+ny*3)}" x2="${X(p1[0]+nx*3)}" y2="${Y(p1[1]+ny*3)}" stroke="${c('--screen')}" stroke-width="6"/>`;
+  s += `<text x="${X(30)}" y="${Y(62)}" font-family="Inconsolata" font-size="11" fill="${c('--dim')}">PCB</text>`;
+  s += `<rect x="${X(2)}" y="${Y(D.speaker.d+8)}" width="${18*S}" height="${D.speaker.d*S}" rx="4" fill="${c('--grille')}" opacity=".7"/>`;
+  s += `<text x="${X(24)}" y="${Y(22)}" font-family="Inconsolata" font-size="11" fill="${c('--dim')}">speaker</text>`;
+  s += dim(X(0), Y(0)+34, X(D.depth), Y(0)+34, `${D.depth} mm deep`, 'h');
+  s += dim(X(0)-30, Y(D.backH), X(0)-30, Y(0), `${D.backH} mm`, 'v');
+  s += `<text x="${X(D.depth)+6}" y="${Y(D.frontH/2)+4}" font-family="Inconsolata" font-size="12" fill="${c('--dim')}">${D.frontH} lip</text>`;
+  s += `<text x="${X(D.depth)+4}" y="${Y(D.frontH+22)}" font-family="Inconsolata" font-size="13" font-weight="700" fill="${c('--accent')}">${D.angle.toFixed(0)}°</text>`;
+  s += `<text x="${X(D.depth/2)}" y="${Y(0)+62}" text-anchor="middle" font-family="Inconsolata" font-size="12" fill="${c('--dim')}">back on the left · screen faces right · open underneath</text>`;
+  svg.innerHTML = s;
+}
+function back() {
+  const svg = document.getElementById('back'); const S = 3.3;
+  const ox = (420 - D.W*S)/2, oy = 50;
+  const px = mm => ox + mm*S, py = mm => oy + mm*S;
+  let s = `<defs><pattern id="g2" width="${D.speaker.pitch*S}" height="${D.speaker.pitch*S}" patternUnits="userSpaceOnUse"><circle cx="${D.speaker.pitch*S/2}" cy="${D.speaker.pitch*S/2}" r="${D.speaker.holes*S/2}" fill="${c('--grille')}"/></pattern></defs>`;
+  s += `<rect x="${px(0)}" y="${py(0)}" width="${D.W*S}" height="${D.backH*S}" rx="${D.corner*S}" fill="${c('--shell')}" stroke="${c('--shell-edge')}" stroke-width="3"/>`;
+  const cx = D.W/2, cy = D.backH - D.speaker.d/2 - 8;
+  s += `<circle cx="${px(cx)}" cy="${py(cy)}" r="${D.speaker.d/2*S}" fill="url(#g2)"/><circle cx="${px(cx)}" cy="${py(cy)}" r="${D.speaker.d/2*S}" fill="none" stroke="${c('--shell-dark')}" stroke-width="2"/>`;
+  s += `<rect x="${px(cx-6)}" y="${py(D.backH-6)}" width="${12*S}" height="${4*S}" rx="3" fill="#333"/>`;
+  s += `<text x="${px(cx)}" y="${py(D.backH)+22}" text-anchor="middle" font-family="Inconsolata" font-size="11" fill="${c('--dim')}">USB slot at the bottom edge</text>`;
+  s += dim(px(0), py(0)-22, px(D.W), py(0)-22, `${D.W} mm`, 'h');
+  s += dim(px(D.W)+22, py(0), px(D.W)+22, py(D.backH), `${D.backH}`, 'v');
+  svg.innerHTML = s;
+}
+function dims() {
+  const t = document.getElementById('dims');
+  const rows = [
+    ['Footprint', `${D.W} × ${D.depth} mm`, 'Board width plus 8 mm each side; depth for the speaker magnet and the slope'],
+    ['Height', `${D.backH} mm back, ${D.frontH} mm front lip`, 'The back must clear a 50 mm speaker; the lip keeps the face off the table'],
+    ['Face angle', `${D.angle.toFixed(0)}° from the table`, `${D.faceLen.toFixed(0)} mm along the slope, window centred`],
+    ['Wall (prototype)', `${D.wall} mm`, 'Two perimeters; final part 2.4 mm'],
+    ['Screen window', `${D.screen.w} × ${D.screen.h} mm, ${D.bezelTop} mm from the top`, '1.3 mm beyond the active area; the 101.5 mm board hides behind the face'],
+    ['Speaker grille', `Ø ${D.speaker.d} mm, ${D.speaker.holes} mm holes`, 'On the vertical back, low, so the driver sits under the board'],
+    ['Controls', 'none on the shell', 'Touch: 4 rows of 11 mm, a 12 mm bar for PAUSE, STOP, VOL −/+'],
+  ];
+  rows.forEach(r => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${r[0]}</td><td class="n">${r[1]}</td><td style="color:var(--dim)">${r[2]}</td>`; t.appendChild(tr); });
+}
+front(); side(); back(); dims();
+new MutationObserver(()=>{front();side();back();}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+</script>
+</body>
+</html>
