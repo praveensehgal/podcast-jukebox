@@ -19,7 +19,7 @@ fails in GitHub, not on his coffee table.
 | 2 | Up First | https://feeds.npr.org/510318/podcast.xml |
 | 3 | The Daily | https://feeds.simplecast.com/54nAGcIl |
 | 4 | BBC Global News | https://podcasts.files.bbci.co.uk/p02nq0gn.rss |
-| 5 | Marketplace | https://www.marketplace.org/feed/podcast/marketplace |
+| 5 | Marketplace | https://feeds.publicradio.org/public_feeds/marketplace/rss/rss |
 | 6 | Fresh Air | https://feeds.npr.org/381444908/podcast.xml |
 | 7 | This American Life | https://www.thisamericanlife.org/podcast/rss.xml |
 | 8 | Radiolab | https://feeds.simplecast.com/EmVW7VGp |
@@ -33,5 +33,5 @@ fails in GitHub, not on his coffee table.
 | 16 | Pod Save America | https://feeds.simplecast.com/dxZsm5kX |
 | 17 | The Rewatchables | https://feeds.megaphone.fm/the-rewatchables |
 | 18 | Bill Simmons | https://feeds.megaphone.fm/the-bill-simmons-podcast |
-| 19 | WTF with Marc Maron | https://feeds.acast.com/public/shows/wtf-with-marc-maron |
+| 19 | WTF with Marc Maron | https://feeds.acast.com/public/shows/wtf-with-marc-maron-podcast |
 | 20 | Pardon My Take | https://feeds.megaphone.fm/pardon-my-take |
