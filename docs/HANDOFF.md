@@ -14,7 +14,7 @@ Build stages and what proved them:
 
 | Stage | What | Proof on the bench |
 |---|---|---|
-| A | LovyanGFX + LVGL 9, boot status screen, channel list, serial stand-in input | Screen renders; "open channel 6 Fresh Air" from the serial keys |
+| A | LovyanGFX + LVGL 9, boot status screen, channel list, serial stand-in input | Praveen confirmed colours and orientation on the panel 2026-10-10; "open channel 6 Fresh Air" from the serial keys |
 | spike | ESP8266Audio Helix MP3 over HTTPS, persistent I2S | 52 s of NPR News Now decoded with the list on screen, 53 KB heap free |
 | C/D | resolver client, episode list, Now Playing, state machine | 3 consecutive channel → play → back → pause → resume → stop cycles; resume at 2:02 from a saved position |
 | E | Settings, Wi-Fi scan + QR, password strip, Bluetooth, sleep timer | Full tour twice, 12 networks found, no crash |
