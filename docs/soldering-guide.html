@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jukebox Soldering Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Fragment+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font-body:'Bricolage Grotesque',ui-sans-serif,'Segoe UI',sans-serif;
+  --font-mono:'Fragment Mono',ui-monospace,Menlo,monospace;
+  --bg:#f4f1e8;--grid:rgba(30,58,95,.055);--surface:#fbfaf5;--surface2:#fffefa;--recess:#ebe7da;
+  --border:rgba(30,40,60,.14);--text:#182233;--dim:#566076;
+  --heat:#c2410c;--heat-dim:#fbe6d8;--ok:#3f7d3a;--ok-dim:#e2efdc;--warn:#a16207;--warn-dim:#f7ecc8;
+  --ink:#1e3a5f;--ink-dim:#dfe7f1;--copper:#b9772f;--solder:#9aa3ad;--board:#2f6b4f;--board-dim:#d9e8df;
+  --w-red:#cf3b2e;--w-black:#20242b;--w-yellow:#d9a400;--w-green:#2f8f4a;--w-blue:#2f6fd0;
+  --w-white:#737d8e;--w-orange:#e07a1f;--w-purple:#8a4fa3;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#12161d;--grid:rgba(160,190,230,.05);--surface:#1a2029;--surface2:#202733;--recess:#151a22;
+  --border:rgba(200,215,240,.13);--text:#e6eaf1;--dim:#9aa5b8;
+  --heat:#f08a55;--heat-dim:#3a2318;--ok:#7cc070;--ok-dim:#1d2f1d;--warn:#e0b34a;--warn-dim:#33290f;
+  --ink:#9dbde6;--ink-dim:#1c2a3d;--copper:#d79a57;--solder:#c3cbd5;--board:#5aa783;--board-dim:#1b2b24;
+  --w-black:#aeb6c2;--w-white:#e8ecf2;
+}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--font-body);color:var(--text);line-height:1.55;font-size:17px;
+  background:var(--bg);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.wrap{display:grid;grid-template-columns:220px minmax(0,1fr);gap:40px;max-width:1180px;margin:0 auto;padding:32px 24px 80px}
+nav.toc{position:sticky;top:24px;align-self:start;font-family:var(--font-mono);font-size:13px}
+nav.toc b{display:block;color:var(--dim);font-weight:400;letter-spacing:.08em;text-transform:uppercase;font-size:11px;margin:14px 0 6px}
+nav.toc a{display:block;color:var(--text);text-decoration:none;padding:5px 10px;border-left:2px solid var(--border)}
+nav.toc a:hover{border-left-color:var(--heat);color:var(--heat)}
+main{min-width:0}
+.kicker{font-family:var(--font-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--heat)}
+h1{font-size:clamp(34px,5.4vw,60px);line-height:1.02;font-weight:800;letter-spacing:-.02em;margin:10px 0 16px;max-width:15ch}
+.lede{font-size:20px;max-width:60ch;color:var(--dim);margin:0 0 24px}
+.hero{background:var(--surface2);border:1px solid var(--border);border-radius:18px;padding:34px 34px 26px;box-shadow:0 18px 40px -28px rgba(20,30,50,.45)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:6px}
+.fact{border-top:3px solid var(--ink);padding:10px 2px 0;min-width:0}
+.fact.hot{border-top-color:var(--heat)}
+.fact strong{display:block;font-size:24px;font-weight:800;letter-spacing:-.01em}
+.fact span{font-size:14px;color:var(--dim)}
+section{margin-top:56px;scroll-margin-top:20px}
+.label{font-family:var(--font-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:10px}
+.label i{width:9px;height:9px;border-radius:50%;background:var(--heat);display:inline-block}
+.label.b i{background:var(--ink)}.label.g i{background:var(--ok)}
+h2{font-size:32px;font-weight:800;letter-spacing:-.015em;margin:6px 0 10px;line-height:1.1}
+h3{font-size:20px;font-weight:600;margin:0 0 6px}
+p{margin:0 0 12px;max-width:68ch}
+code,.mono{font-family:var(--font-mono);font-size:.86em;background:var(--recess);padding:1px 6px;border-radius:5px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;min-width:0}
+.fig{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:14px;margin:14px 0}
+.fig svg{display:block;width:100%;height:auto}
+.fig figcaption,.cap{font-size:14px;color:var(--dim);margin-top:8px}
+figure{margin:0}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.two>*{min-width:0}.two{align-items:start}
+table{width:100%;border-collapse:collapse;font-size:15.5px}
+th{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);text-align:left;font-weight:400;padding:8px 10px;border-bottom:1px solid var(--border)}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere}
+tr:last-child td{border-bottom:0}
+.tw{overflow-x:auto}
+.sw{display:inline-block;width:26px;height:8px;border-radius:4px;vertical-align:middle;margin-right:8px;border:1px solid rgba(0,0,0,.15)}
+.pill{font-family:var(--font-mono);font-size:11.5px;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.pill.a{background:var(--heat-dim);color:var(--heat)}.pill.bb{background:var(--ink-dim);color:var(--ink)}
+.yes{color:var(--ok);font-weight:600}.no{color:var(--heat);font-weight:600}
+.steps{list-style:none;padding:0;margin:16px 0 0;counter-reset:s}
+.steps>li{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px 16px 74px;margin-bottom:12px;break-inside:avoid}
+.steps>li>.n{position:absolute;left:18px;top:16px;width:40px;height:40px;border-radius:10px;background:var(--heat);color:#fff;font-family:var(--font-mono);font-size:14px;display:grid;place-items:center}
+.jobb .steps>li>.n{background:var(--ink)}
+@media (prefers-color-scheme:dark){.steps>li>.n{color:#12161d}}
+.steps ul{margin:6px 0 8px;padding-left:20px}.steps li li{margin-bottom:4px}
+.done{display:flex;gap:8px;align-items:center;font-family:var(--font-mono);font-size:12.5px;color:var(--dim);margin-top:8px;cursor:pointer;width:max-content}
+.done input{width:18px;height:18px;accent-color:var(--ok)}
+li.ticked{opacity:.55}
+.note{border-left:4px solid var(--warn);background:var(--warn-dim);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:15.5px}
+.note.stop{border-left-color:var(--heat);background:var(--heat-dim)}
+.note.good{border-left-color:var(--ok);background:var(--ok-dim)}
+.note b{font-weight:600}
+.verdicts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
+.verdicts div{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;font-size:14px;min-width:0}
+.verdicts b{display:block;font-size:15px}
+/* svg */
+.st{stroke:var(--text);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.thin{stroke-width:1.2}.dash{stroke-dasharray:5 5}
+.fb{fill:var(--board-dim);stroke:var(--board);stroke-width:2}
+.fs{fill:var(--surface);stroke:var(--text);stroke-width:2}
+.fr{fill:var(--recess);stroke:var(--text);stroke-width:1.5}
+.cu{fill:var(--copper)}.sn{fill:var(--solder);stroke:var(--text);stroke-width:1.2}
+.hot{fill:var(--heat)}
+.t{font-family:var(--font-mono);font-size:13px;fill:var(--text)}
+.ts{font-family:var(--font-mono);font-size:11px;fill:var(--dim)}
+.tb{font-family:var(--font-body);font-size:15px;font-weight:600;fill:var(--text)}
+.wire{fill:none;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}
+.red{stroke:var(--w-red)}.black{stroke:var(--w-black)}.yellow{stroke:var(--w-yellow)}.green{stroke:var(--w-green)}.blue{stroke:var(--w-blue)}
+.white{stroke:var(--w-white)}.orange{stroke:var(--w-orange)}.purple{stroke:var(--w-purple)}
+.bred{background:var(--w-red)}.bblack{background:var(--w-black)}.byellow{background:var(--w-yellow)}.bgreen{background:var(--w-green)}.bblue{background:var(--w-blue)}
+.bwhite{background:var(--w-white)}.borange{background:var(--w-orange)}.bpurple{background:var(--w-purple)}
+@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.hero,section{animation:up .5s ease both}
+section:nth-of-type(1){animation-delay:.08s}section:nth-of-type(2){animation-delay:.14s}section:nth-of-type(3){animation-delay:.2s}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}html{scroll-behavior:auto}}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr);gap:14px;padding:14px 14px 60px}
+  nav.toc{position:sticky;top:0;z-index:5;display:flex;gap:4px;overflow-x:auto;background:var(--bg);padding:8px 0;border-bottom:1px solid var(--border)}
+  nav.toc b{display:none}nav.toc a{white-space:nowrap;border-left:0;border:1px solid var(--border);border-radius:99px;padding:5px 12px}
+  .hero{padding:22px 18px}.steps>li{padding:64px 16px 14px 16px}}
+@media print{body{background:#fff;font-size:12.5pt}nav.toc,.done{display:none}.wrap{display:block;padding:0}.hero,.card,.fig,.steps>li{box-shadow:none;break-inside:avoid}section{margin-top:26px;animation:none}h2{break-after:avoid}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="Sections">
+  <b>Before</b>
+  <a href="#bench">Set up the bench</a>
+  <a href="#joint">One good joint</a>
+  <a href="#all">Every connection</a>
+  <b>Job A · sound</b>
+  <a href="#a-prep">Wires and amp</a>
+  <a href="#a-speaker">Speaker</a>
+  <a href="#a-din">The one board joint</a>
+  <a href="#a-check">Check, then power</a>
+  <b>Job B · buttons</b>
+  <a href="#b-switch">Switch harness</a>
+  <a href="#b-board">Three board joints</a>
+  <a href="#b-check">Check and test</a>
+</nav>
+<main>
+
+<div class="hero">
+  <div class="kicker">Podcast Jukebox · bench guide</div>
+  <h1>Solder the amp, the speaker and the three buttons</h1>
+  <p class="lede">Two separate jobs. Job A gives the jukebox its sound. Job B adds the PLAY, PAUSE and STOP switches and can wait for another day. Everything is already on your bench; there is nothing to buy.</p>
+  <div class="facts">
+    <div class="fact hot"><strong>350 °C</strong><span>iron setting, 660 °F, for every joint here</span></div>
+    <div class="fact hot"><strong>2 seconds</strong><span>iron on a joint. Never more than 4</span></div>
+    <div class="fact"><strong>Job A · 10 joints</strong><span>about 30 minutes, one of them small</span></div>
+    <div class="fact"><strong>Job B · 9 joints</strong><span>about 40 minutes, three of them small</span></div>
+  </div>
+</div>
+
+<section id="bench">
+  <div class="label"><i></i>Before you heat the iron</div>
+  <h2>Set up the bench</h2>
+  <div class="two">
+    <div class="card">
+      <h3>Station</h3>
+      <ul>
+        <li>Hakko FX-888DX at <b>350 °C</b>, the T18-D32 chisel tip. Wipe it in the brass wool and melt a little solder on it so it shines.</li>
+        <li>Fume extractor on, safety glasses on.</li>
+        <li>ESD mat down, wrist strap on whenever you touch the Sunton board.</li>
+        <li>Magnifier lamp over the work. Board held in the PanaVise or the helping hands, never in your fingers.</li>
+        <li>Fluke 115 within reach.</li>
+      </ul>
+      <div class="note stop"><b>Unplug the Sunton from USB</b> and leave it unplugged until a step says to plug it in.</div>
+    </div>
+    <div class="card">
+      <h3>Parts, all owned</h3>
+      <div class="tw"><table>
+        <tr><td>MAX98357A amp</td><td>A bare one from the four-pack. Its bag has a 2-pin screw terminal (use it) and a 7-pin header strip (leave it out)</td></tr>
+        <tr><td>Speaker</td><td>One 2-inch, 4 Ω, 3 W from the six-pack</td></tr>
+        <tr><td>Two 4-pin pigtails</td><td>1.25 mm plugs with loose wires, from the Sunton box</td></tr>
+        <tr><td>22 AWG silicone wire</td><td>Red and black, for the speaker</td></tr>
+        <tr><td>Four thin wires</td><td>Cut from Dupont jumpers: one blue, plus three colours you can tell apart for Job B</td></tr>
+        <tr><td>Three tact switches</td><td>The 12 × 12 mm four-leg ones, Job B</td></tr>
+        <tr><td>Also</td><td>63/37 solder, flux pen, flush cutters, stripper, tweezers, solder wick, heat-shrink, a little tape</td></tr>
+      </table></div>
+    </div>
+  </div>
+</section>
+
+<section id="joint">
+  <div class="label"><i></i>The only skill you need</div>
+  <h2>One good joint</h2>
+  <p>Every joint in this guide is the same four moves. First tin each wire: strip 4 mm, twist the strands, dab flux, then touch iron and solder to it until the strands turn silver.</p>
+  <figure class="fig">
+    <svg viewBox="0 0 880 210" role="img" aria-label="Four frames showing how to make a solder joint">
+      <g id="pad"><rect x="20" y="150" width="170" height="14" class="fb"/><rect x="70" y="144" width="70" height="8" class="cu"/><rect x="101" y="60" width="8" height="92" fill="var(--solder)" stroke="var(--text)" stroke-width="1"/></g>
+      <use href="#pad" x="220"/><use href="#pad" x="440"/><use href="#pad" x="660"/>
+      <!-- 1 -->
+      <polygon points="150,70 170,60 126,138 114,140" class="hot"/>
+      <text x="20" y="24" class="tb">1 · Heat both</text><text x="20" y="42" class="ts">tip on pad and wire</text>
+      <!-- 2 -->
+      <polygon points="370,70 390,60 346,138 334,140" class="hot"/>
+      <line x1="250" y1="70" x2="316" y2="138" stroke="var(--solder)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M306 144 q18 -22 30 0z" class="sn"/>
+      <text x="240" y="24" class="tb">2 · Feed the joint</text><text x="240" y="42" class="ts">solder onto the joint</text>
+      <!-- 3 -->
+      <polygon points="590,70 610,60 566,138 554,140" class="hot"/>
+      <path d="M512 144 q33 -50 66 0z" class="sn"/>
+      <line x1="470" y1="50" x2="500" y2="82" stroke="var(--solder)" stroke-width="5" stroke-linecap="round" opacity=".45"/>
+      <text x="460" y="24" class="tb">3 · Solder away</text><text x="460" y="42" class="ts">iron stays a beat</text>
+      <!-- 4 -->
+      <path d="M732 144 q33 -50 66 0z" class="sn"/>
+      <path d="M748 134 q8 -14 14 -18" class="st thin" style="stroke:var(--surface2)"/>
+      <text x="680" y="24" class="tb">4 · Iron away</text><text x="680" y="42" class="ts">hold still, 2 s</text>
+      
+    </svg>
+    <figcaption>Side view. Green is the board, copper is the pad, the grey post is the wire, orange is the iron. Feed the solder onto the joint, never onto the tip.</figcaption>
+  </figure>
+  <figure class="fig">
+    <svg viewBox="0 0 880 130" role="img" aria-label="Good joint compared with three bad ones">
+      <g id="p2"><rect x="10" y="92" width="190" height="12" class="fb"/><rect x="70" y="86" width="70" height="8" class="cu"/><rect x="101" y="30" width="8" height="64" fill="var(--solder)" stroke="var(--text)" stroke-width="1"/></g>
+      <use href="#p2" x="220"/><use href="#p2" x="440"/>
+      <path d="M72 86 q33 -46 66 0z" class="sn"/>
+      <ellipse cx="325" cy="72" rx="24" ry="17" class="sn" style="fill:var(--dim)"/>
+      <path d="M538 86 q7 -8 14 0z" class="sn"/>
+      <rect x="670" y="92" width="200" height="12" class="fb"/><rect x="690" y="86" width="50" height="8" class="cu"/><rect x="800" y="86" width="50" height="8" class="cu"/>
+      <path d="M694 86 q76 -44 152 0z" class="sn"/>
+      <text x="10" y="124" class="t" style="fill:var(--ok)">good</text><text x="230" y="124" class="t">cold</text><text x="450" y="124" class="t">starved</text><text x="670" y="124" class="t">bridge</text>
+    </svg>
+  </figure>
+  <div class="verdicts">
+    <div><b class="yes">Good</b>Shiny, shaped like a small tent, wire outline still visible.</div>
+    <div><b class="no">Cold</b>Dull grey ball sitting on the pad. Add flux and reheat.</div>
+    <div><b class="no">Starved</b>Bare copper showing. Reheat and feed a little more.</div>
+    <div><b class="no">Bridge</b>Solder touching a neighbour. Flux, then lift it off with the wick.</div>
+  </div>
+</section>
+
+<section id="all">
+  <div class="label b"><i></i>Reference</div>
+  <h2>Every connection in one place</h2>
+  <figure class="fig">
+    <svg viewBox="0 0 900 380" role="img" aria-label="Wiring overview: Sunton board to amplifier, speaker and three switches">
+      <rect x="20" y="20" width="230" height="340" rx="10" class="fb"/><text x="34" y="46" class="tb">Sunton, back side</text>
+      <rect x="34" y="230" width="96" height="106" rx="4" class="fr"/><text x="42" y="252" class="ts">ESP32 module</text><text x="42" y="268" class="ts">edge pads</text>
+      <g class="t" text-anchor="end">
+        <text x="236" y="85">P1 · 1 VIN</text><text x="236" y="105">P1 · 4 GND</text>
+        <text x="236" y="145">P3 · 3 IO22</text><text x="236" y="165">P3 · 4 IO21</text>
+        <text x="236" y="205">pad 12 IO16</text>
+        <text x="236" y="255">pad 2 IO23</text><text x="236" y="275">pad 8 IO19</text><text x="236" y="295">pad 9 IO18</text>
+        <text x="236" y="335">P3 · 1 GND</text>
+      </g>
+      <g class="cu"><rect x="244" y="74" width="12" height="12"/><rect x="244" y="94" width="12" height="12"/><rect x="244" y="134" width="12" height="12"/><rect x="244" y="154" width="12" height="12"/><rect x="244" y="194" width="12" height="12"/><rect x="244" y="244" width="12" height="12"/><rect x="244" y="264" width="12" height="12"/><rect x="244" y="284" width="12" height="12"/><rect x="244" y="324" width="12" height="12"/></g>
+      <rect x="470" y="30" width="210" height="170" rx="8" class="fb"/><text x="560" y="54" class="tb">MAX98357A</text>
+      <g class="t"><text x="486" y="75">Vin</text><text x="486" y="100">GND</text><text x="486" y="125">BCLK</text><text x="486" y="150">LRC</text><text x="486" y="175">DIN</text><text x="634" y="95">+</text><text x="634" y="125">−</text></g>
+      <g class="cu"><rect x="464" y="64" width="12" height="12"/><rect x="464" y="89" width="12" height="12"/><rect x="464" y="114" width="12" height="12"/><rect x="464" y="139" width="12" height="12"/><rect x="464" y="164" width="12" height="12"/><rect x="674" y="84" width="12" height="12"/><rect x="674" y="114" width="12" height="12"/></g>
+      <circle cx="805" cy="105" r="60" class="fs"/><circle cx="805" cy="105" r="24" class="fr"/><text x="776" y="190" class="tb">speaker</text>
+      <path d="M256 80 H330 V70 H464" class="wire red"/><path d="M256 100 H350 V95 H464" class="wire black"/>
+      <path d="M256 140 H370 V120 H464" class="wire yellow"/><path d="M256 160 H390 V145 H464" class="wire green"/>
+      <path d="M256 200 H410 V170 H464" class="wire blue"/>
+      <path d="M686 90 H747" class="wire red"/><path d="M686 120 H747" class="wire black"/>
+      <g><rect x="470" y="250" width="60" height="60" rx="8" class="fs"/><rect x="590" y="250" width="60" height="60" rx="8" class="fs"/><rect x="710" y="250" width="60" height="60" rx="8" class="fs"/>
+      <circle cx="500" cy="280" r="15" class="fr"/><circle cx="620" cy="280" r="15" class="fr"/><circle cx="740" cy="280" r="15" class="fr"/>
+      <text x="482" y="366" class="t">PLAY</text><text x="598" y="366" class="t">PAUSE</text><text x="722" y="366" class="t">STOP</text></g>
+      <path d="M256 250 H430 V224 H694 V262 H710" class="wire purple"/>
+      <path d="M256 270 H445 V238 H574 V262 H590" class="wire orange"/>
+      <path d="M256 290 H458 V262 H470" class="wire white"/>
+      <path d="M256 330 H788 V298 H770 M668 330 V298 H650 M548 330 V298 H530" class="wire black"/>
+      <text x="270" y="352" class="ts">ground, chained through all three</text>
+    </svg>
+    <figcaption>Schematic, not to scale. The top half is Job A, the three switches are Job B. Follow the labels on your board and the meter checks below, not the positions drawn here.</figcaption>
+  </figure>
+  <div class="card tw"><table>
+    <tr><th>Wire</th><th>From, on the Sunton</th><th>To</th><th>Job</th></tr>
+    <tr><td><span class="sw bred"></span>red</td><td>P1 pin 1, <code>VIN</code> 5 V</td><td>amp <code>Vin</code></td><td><span class="pill a">A</span></td></tr>
+    <tr><td><span class="sw bblack"></span>black</td><td>P1 pin 4, <code>GND</code></td><td>amp <code>GND</code></td><td><span class="pill a">A</span></td></tr>
+    <tr><td><span class="sw byellow"></span>yellow</td><td>P3 pin 3, <code>IO22</code></td><td>amp <code>BCLK</code></td><td><span class="pill a">A</span></td></tr>
+    <tr><td><span class="sw bgreen"></span>green</td><td>P3 pin 4, <code>IO21</code></td><td>amp <code>LRC</code></td><td><span class="pill a">A</span></td></tr>
+    <tr><td><span class="sw bblue"></span>blue, thin</td><td>module pad <code>IO16</code>, 12th from the antenna</td><td>amp <code>DIN</code></td><td><span class="pill a">A</span></td></tr>
+    <tr><td><span class="sw bred"></span><span class="sw bblack"></span>22 AWG</td><td>speaker lugs</td><td>amp screw terminal, + and −</td><td><span class="pill a">A</span></td></tr>
+    <tr><td><span class="sw bwhite"></span>thin</td><td>module pad <code>IO18</code>, 9th</td><td>PLAY switch</td><td><span class="pill bb">B</span></td></tr>
+    <tr><td><span class="sw borange"></span>thin</td><td>module pad <code>IO19</code>, 8th</td><td>PAUSE switch</td><td><span class="pill bb">B</span></td></tr>
+    <tr><td><span class="sw bpurple"></span>thin</td><td>module pad <code>IO23</code>, 2nd</td><td>STOP switch</td><td><span class="pill bb">B</span></td></tr>
+    <tr><td><span class="sw bblack"></span>black</td><td>P3 pin 1, <code>GND</code></td><td>one leg of all three switches, in a chain</td><td><span class="pill bb">B</span></td></tr>
+  </table></div>
+  <p class="cap">Left unconnected on purpose: amp <code>SD</code> and <code>GAIN</code>; P1 pins 2 and 3 (serial); P3 pin 2 (<code>IO35</code>, kept for the Bluetooth module). Pigtail colours vary between batches, so go by pin position, not by the colours in this table.</p>
+</section>
+
+<section id="a-prep">
+  <div class="label"><i></i>Job A · sound</div>
+  <h2>Wires and amp</h2>
+  <ol class="steps">
+    <li><span class="n">A1</span>
+      <h3>Find 5 V and ground with the meter</h3>
+      <p>Plug one pigtail into <code>P1</code> and one into <code>P3</code>. The plugs are keyed. Strip 4 mm from all eight wire ends and tin them.</p>
+      <figure class="fig">
+        <svg viewBox="0 0 880 190" role="img" aria-label="P1 and P3 sockets with pin numbers">
+          <rect x="30" y="40" width="250" height="60" rx="6" class="fs"/><text x="30" y="28" class="tb">P1 · power and serial</text>
+          <rect x="480" y="40" width="250" height="60" rx="6" class="fs"/><text x="480" y="28" class="tb">P3 · spare pins</text>
+          <g class="cu"><rect x="56" y="58" width="22" height="24"/><rect x="116" y="58" width="22" height="24"/><rect x="176" y="58" width="22" height="24"/><rect x="236" y="58" width="22" height="24"/>
+          <rect x="506" y="58" width="22" height="24"/><rect x="566" y="58" width="22" height="24"/><rect x="626" y="58" width="22" height="24"/><rect x="686" y="58" width="22" height="24"/></g>
+          <path d="M67 82 V150" class="wire red"/><path d="M127 82 V130" class="wire white"/><path d="M187 82 V130" class="wire white"/><path d="M247 82 V150" class="wire black"/>
+          <path d="M517 82 V150" class="wire black"/><path d="M577 82 V130" class="wire white"/><path d="M637 82 V150" class="wire yellow"/><path d="M697 82 V150" class="wire green"/>
+          <text x="50" y="172" class="t">1 VIN</text><text x="110" y="148" class="ts">2 TX</text><text x="172" y="148" class="ts">3 RX</text><text x="228" y="172" class="t">4 GND</text>
+          <text x="496" y="172" class="t">1 GND</text><text x="556" y="148" class="ts">2 IO35</text><text x="614" y="172" class="t">3 IO22</text><text x="676" y="172" class="t">4 IO21</text>
+          <rect x="310" y="60" width="140" height="70" rx="8" class="fr"/><text x="330" y="90" class="tb">+ 5.0 V</text><text x="324" y="112" class="ts">red probe on pin 1</text>
+        </svg>
+        <figcaption>Pin 1 is the end marked on the board's silkscreen. The meter settles any doubt.</figcaption>
+      </figure>
+      <ul>
+        <li>Spread all eight wire ends apart on the mat so none can touch another. Tape them down.</li>
+        <li>Plug in USB. Fluke on DC volts. Red probe on the wire you think is pin 1, black probe on the wire you think is pin 4.</li>
+        <li><b>About +5 V</b> means you have them right. <b>About −5 V</b> means they are the other way round. Mark the 5 V wire with red tape and the ground wire with black.</li>
+        <li><b>Unplug USB.</b></li>
+        <li>Fluke on continuity. Find the <code>P3</code> wire that beeps against your <code>P1</code> ground wire. That is <code>P3</code> pin 1. Counting from it: pin 3 is <code>IO22</code>, pin 4 is <code>IO21</code>.</li>
+      </ul>
+      <label class="done"><input type="checkbox" data-k="a1">done</label>
+    </li>
+    <li><span class="n">A2</span>
+      <h3>Solder the screw terminal to the amp</h3>
+      <p>Push the 2-pin terminal block into the two large holes marked <code>+</code> and <code>−</code>, wire openings facing off the edge of the board. Turn the board over, hold the block flat with tape, solder both legs. These are big joints: three seconds each is fine.</p>
+      <label class="done"><input type="checkbox" data-k="a2">done</label>
+    </li>
+    <li><span class="n">A3</span>
+      <h3>Solder four wires into the amp</h3>
+      <figure class="fig">
+        <svg viewBox="10 6 640 240" role="img" aria-label="Amplifier board with labelled holes and wire colours">
+          <rect x="250" y="20" width="380" height="150" rx="10" class="fb"/>
+          <rect x="390" y="56" width="70" height="56" rx="4" class="fr"/><text x="410" y="88" class="ts">chip</text>
+          <rect x="520" y="34" width="84" height="46" rx="4" class="fs"/><text x="534" y="62" class="t">+   −</text><text x="520" y="98" class="ts">to speaker</text>
+          <g class="cu"><circle cx="290" cy="146" r="9"/><circle cx="340" cy="146" r="9"/><circle cx="390" cy="146" r="9"/><circle cx="440" cy="146" r="9"/><circle cx="490" cy="146" r="9"/><circle cx="540" cy="146" r="9"/><circle cx="590" cy="146" r="9"/></g>
+          <g class="ts"><text x="278" y="128">LRC</text><text x="324" y="128">BCLK</text><text x="378" y="128">DIN</text><text x="424" y="128">GAIN</text><text x="482" y="128">SD</text><text x="528" y="128">GND</text><text x="580" y="128">Vin</text></g>
+          <path d="M290 146 V232" class="wire green"/><path d="M340 146 V232" class="wire yellow"/><path d="M390 146 V232" class="wire blue" stroke-dasharray="2 9"/>
+          <path d="M540 146 V232" class="wire black"/><path d="M590 146 V232" class="wire red"/>
+          <text x="418" y="196" class="ts">leave both</text><text x="418" y="210" class="ts">empty</text>
+          <text x="20" y="150" class="ts">blue comes later,</text><text x="20" y="164" class="ts">in step A6</text><path d="M150 152 H372" class="st thin dash"/>
+        </svg>
+        <figcaption>Read the labels printed on your board. If the order differs from this drawing, the labels win.</figcaption>
+      </figure>
+      <ul>
+        <li>Cut the red, black, yellow and green pigtail wires to about 12 cm.</li>
+        <li>Push each tinned end down through its hole from the chip side: <b>red → Vin</b>, <b>black → GND</b>, <b>yellow → BCLK</b>, <b>green → LRC</b>.</li>
+        <li>Bend each wire over slightly underneath so it stays put, solder on the underside, then snip the excess flush.</li>
+        <li><code>Vin</code> and <code>GND</code> are neighbours. Look at that pair under the lamp for a bridge.</li>
+      </ul>
+      <label class="done"><input type="checkbox" data-k="a3">done</label>
+    </li>
+  </ol>
+</section>
+
+<section id="a-speaker">
+  <div class="label"><i></i>Job A · sound</div>
+  <h2>Speaker</h2>
+  <ol class="steps">
+    <li><span class="n">A4</span>
+      <h3>Solder two wires to the speaker lugs</h3>
+      <div class="two">
+        <figure class="fig">
+          <svg viewBox="0 0 420 260" role="img" aria-label="Back of the speaker with two solder lugs">
+            <circle cx="170" cy="130" r="112" class="fs"/><circle cx="170" cy="130" r="54" class="fr"/><text x="140" y="134" class="ts">magnet</text>
+            <rect x="232" y="64" width="34" height="16" rx="2" class="cu"/><rect x="232" y="180" width="34" height="16" rx="2" class="cu"/>
+            <text x="238" y="56" class="t">+</text><text x="238" y="216" class="t">−</text>
+            <path d="M250 72 H400" class="wire red"/><path d="M250 188 H400" class="wire black"/>
+            <path d="M232 72 q-30 20 -40 50 M232 188 q-30 -20 -40 -50" class="st thin dash"/>
+            <text x="286" y="130" class="ts">fine braid to the</text><text x="286" y="144" class="ts">cone: do not cook</text>
+          </svg>
+        </figure>
+        <div>
+          <ul>
+            <li>Cut 12 cm of red and 12 cm of black 22 AWG. Strip 4 mm at one end of each and tin it. Strip 5 mm at the other end and leave it bare.</li>
+            <li>Put a small bump of solder on each speaker lug.</li>
+            <li>Lay the tinned wire end on the bump, touch the iron, let it sink in, lift. Red on the lug marked <code>+</code>.</li>
+            <li><b>Two seconds per lug.</b> The hair-thin braid that feeds the cone is soldered to the same lug and lets go if you linger.</li>
+            <li>Twist the bare ends, push them into the amp's screw terminal, red in <code>+</code>, and tighten. Tug each one.</li>
+          </ul>
+        </div>
+      </div>
+      <label class="done"><input type="checkbox" data-k="a4">done</label>
+    </li>
+  </ol>
+</section>
+
+<section id="a-din">
+  <div class="label"><i></i>Job A · sound</div>
+  <h2>The one board joint</h2>
+  <p>The audio data line has no socket pin, so the blue wire goes straight onto the ESP32 module. The module is the metal can on the back of the board. Along its long edges sit rows of small gold pads, 1.27 mm apart. You need one of them.</p>
+  <div class="two">
+    <figure class="fig">
+      <svg viewBox="0 0 440 520" role="img" aria-label="ESP32 module pads counted from the antenna end">
+        <rect x="60" y="20" width="200" height="480" rx="6" class="fr"/>
+        <rect x="60" y="20" width="200" height="74" class="fb"/><path d="M80 44 h28 v18 h28 v-18 h28 v18 h28 v-18 h28 v18" class="st thin"/><text x="72" y="86" class="ts">antenna, no can here</text>
+        <rect x="76" y="110" width="168" height="372" rx="4" class="fs"/><text x="104" y="300" class="tb">metal can</text><text x="104" y="320" class="ts">it is ground</text>
+        <g class="cu">
+          <rect x="254" y="112" width="14" height="14"/><rect x="254" y="140" width="14" height="14"/><rect x="254" y="168" width="14" height="14"/><rect x="254" y="196" width="14" height="14"/><rect x="254" y="224" width="14" height="14"/><rect x="254" y="252" width="14" height="14"/><rect x="254" y="280" width="14" height="14"/><rect x="254" y="308" width="14" height="14"/><rect x="254" y="336" width="14" height="14"/><rect x="254" y="364" width="14" height="14"/><rect x="254" y="392" width="14" height="14"/><rect x="254" y="420" width="14" height="14"/><rect x="254" y="448" width="14" height="14"/><rect x="254" y="476" width="14" height="14"/>
+          <rect x="52" y="112" width="14" height="14" opacity=".4"/><rect x="52" y="140" width="14" height="14" opacity=".4"/><rect x="52" y="168" width="14" height="14" opacity=".4"/><rect x="52" y="196" width="14" height="14" opacity=".4"/><rect x="52" y="224" width="14" height="14" opacity=".4"/>
+        </g>
+        <g class="t">
+          <text x="282" y="124">1  GND</text><text x="282" y="152" fill="var(--w-purple)">2  IO23  STOP</text><text x="282" y="180">3  IO22</text>
+          <text x="282" y="208" class="ts">4  TX</text><text x="282" y="236" class="ts">5  RX</text><text x="282" y="264">6  IO21</text><text x="282" y="292" class="ts">7  unused</text>
+          <text x="282" y="320" fill="var(--w-orange)">8  IO19  PAUSE</text><text x="282" y="348" fill="var(--w-white)">9  IO18  PLAY</text>
+          <text x="282" y="376" class="ts">10 IO5</text><text x="282" y="404" class="ts">11 IO17</text><text x="282" y="432" fill="var(--w-blue)">12 IO16  DIN</text><text x="282" y="460" class="ts">13 IO4</text><text x="282" y="488" class="ts">14 IO0</text>
+        </g>
+        <circle cx="261" cy="427" r="13" fill="none" stroke="var(--w-blue)" stroke-width="3"/>
+        <text x="4" y="150" class="ts">other</text><text x="4" y="164" class="ts">side:</text><text x="4" y="178" class="ts">not</text><text x="4" y="192" class="ts">this</text>
+      </svg>
+      <figcaption>Pad order from the ESP32-WROOM-32 datasheet, antenna end at the top. Drawn from the datasheet, not from a photo of your board: the beeps in step A5 are what make it certain.</figcaption>
+    </figure>
+    <ol class="steps" style="margin-top:14px">
+      <li><span class="n">A5</span>
+        <h3>Find pad 12 and prove it</h3>
+        <p>Fluke on continuity. Count pads from the antenna end.</p>
+        <ul>
+          <li>Pad 1 beeps against the metal USB socket shell. So does pad 1 on the other side, so this alone does not pick the side.</li>
+          <li><b>Pad 3 beeps against your yellow wire</b> (<code>IO22</code>). On the wrong side it stays silent. This picks the side.</li>
+          <li>Pad 6 beeps against your green wire (<code>IO21</code>). Now the count is confirmed twice.</li>
+          <li>Count on to <b>pad 12</b>. Mark the can beside it with a marker dot.</li>
+        </ul>
+        <label class="done"><input type="checkbox" data-k="a5">done</label>
+      </li>
+      <li><span class="n">A6</span>
+        <h3>Solder the blue wire to pad 12</h3>
+        <figure class="fig">
+          <svg viewBox="0 0 400 190" role="img" aria-label="Thin wire soldered flat onto an edge pad">
+            <rect x="10" y="130" width="380" height="18" class="fb"/><rect x="24" y="62" width="150" height="68" class="fs"/><text x="46" y="102" class="tb">metal can</text>
+            <rect x="178" y="116" width="38" height="14" class="cu"/><path d="M176 130 q20 -30 44 0z" class="sn"/>
+            <path d="M198 121 H384" class="wire blue"/><rect x="276" y="108" width="54" height="26" rx="3" style="fill:var(--warn-dim);stroke:var(--warn)"/>
+            <text x="262" y="172" class="tb">tape, 1 cm out</text>
+            <text x="150" y="28" class="tb">small fillet, clear of the can</text><path d="M198 36 V96" class="st thin dash"/>
+          </svg>
+        </figure>
+        <ul>
+          <li>Cut a blue Dupont jumper to a bare wire about 12 cm long. Strip <b>2 mm</b>, twist, tin.</li>
+          <li>Flux on pad 12. Touch the <b>corner</b> of the tip to the pad with a trace of solder for one second. It leaves a tiny bump.</li>
+          <li>Hold the wire with tweezers, lying flat and pointing away from the module. Rest its tinned end on the bump, touch the iron for one second, lift, hold still.</li>
+          <li>The solder must not reach the can or the pads either side. Tape the wire to the board 1 cm from the joint so nothing can lever it off.</li>
+          <li>Push the other end into the amp's <code>DIN</code> hole and solder it like the rest.</li>
+        </ul>
+        <label class="done"><input type="checkbox" data-k="a6">done</label>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section id="a-check">
+  <div class="label g"><i></i>Job A · sound</div>
+  <h2>Check, then power</h2>
+  <ol class="steps">
+    <li><span class="n">A7</span>
+      <h3>Six beeps before any power</h3>
+      <p>USB still unplugged, Fluke on continuity. Only a wrong answer on the first row can damage anything.</p>
+      <div class="tw"><table>
+        <tr><th>Probe</th><th>Probe</th><th>Expect</th><th>If wrong</th></tr>
+        <tr><td>amp <code>Vin</code></td><td>amp <code>GND</code></td><td class="no">silent</td><td>A bridge between the two end pads. Wick it off. A half-second chirp is normal.</td></tr>
+        <tr><td>amp <code>GND</code></td><td>USB socket shell</td><td class="yes">beep</td><td>Black wire is on the wrong P1 pin, or a cold joint.</td></tr>
+        <tr><td>amp <code>DIN</code></td><td>module pad 12</td><td class="yes">beep</td><td>Reflow whichever end of the blue wire looks dull.</td></tr>
+        <tr><td>module pad 12</td><td>pads 11 and 13, and the can</td><td class="no">silent</td><td>Bridge at the module. Flux, wick, redo with less solder.</td></tr>
+        <tr><td>amp <code>DIN</code></td><td>amp <code>BCLK</code></td><td class="no">silent</td><td>Bridge between neighbours on the amp.</td></tr>
+        <tr><td>amp <code>BCLK</code></td><td>amp <code>LRC</code></td><td class="no">silent</td><td>Same.</td></tr>
+      </table></div>
+      <p class="cap">Across the two speaker terminals the meter <b>does</b> beep. That is the 4 Ω coil and it is correct.</p>
+      <label class="done"><input type="checkbox" data-k="a7">done</label>
+    </li>
+    <li><span class="n">A8</span>
+      <h3>Plug in and play</h3>
+      <p>Plug the board back into the Mac Studio, as it has been all day, so I can watch its log. Tap a channel, tap an episode. Sound should start within about three seconds, and the board's green LED flickers while it plays. Try the − and + buttons on the screen.</p>
+      <div class="tw"><table>
+        <tr><th>What you get</th><th>What it means</th></tr>
+        <tr><td>Silence, LED flickering</td><td>Data is arriving. Measure 5 V between amp <code>Vin</code> and <code>GND</code>, then check the terminal screws.</td></tr>
+        <tr><td>Silence, LED dark, time counting up</td><td>The blue wire is not on <code>IO16</code>. Recount to pad 12.</td></tr>
+        <tr><td>Noise or garbled sound</td><td>Yellow and green are swapped. Swap them at the amp.</td></tr>
+        <tr><td>Crackle when you touch a wire</td><td>A cold joint. Reflow that wire's two ends with flux.</td></tr>
+        <tr><td>Screen restarts when it gets loud</td><td>The USB port cannot supply the peaks. Turn it down for now and tell me; the finished jukebox runs from a 5 V 3 A adapter.</td></tr>
+      </table></div>
+      <div class="note good"><b>Then tell me what you hear.</b> Clean, quiet, distorted or nothing: each one points at a single cause, and level is a firmware change on my side.</div>
+      <label class="done"><input type="checkbox" data-k="a8">done</label>
+    </li>
+  </ol>
+</section>
+
+<section id="b-switch" class="jobb">
+  <div class="label b"><i></i>Job B · buttons</div>
+  <h2>Switch harness</h2>
+  <p>Do this after Job A plays. All of the switch soldering happens off the board, on the mat. Unplug the <code>P3</code> pigtail while you work on its black wire if that is easier.</p>
+  <div class="note"><b>The microSD slot stays empty from now on.</b> The three button lines are the card slot's own pins, and a card in the slot would fight the buttons.</div>
+  <div class="two">
+    <figure class="fig">
+      <svg viewBox="0 0 420 300" role="img" aria-label="Tact switch from above with diagonal legs marked">
+        <rect x="110" y="50" width="200" height="200" rx="14" class="fs"/><circle cx="210" cy="150" r="58" class="fr"/><text x="182" y="154" class="ts">button</text>
+        <g class="cu"><rect x="84" y="80" width="30" height="16"/><rect x="306" y="80" width="30" height="16"/><rect x="84" y="204" width="30" height="16"/><rect x="306" y="204" width="30" height="16"/></g>
+        <circle cx="99" cy="88" r="20" fill="none" stroke="var(--ink)" stroke-width="3"/><circle cx="321" cy="212" r="20" fill="none" stroke="var(--w-black)" stroke-width="3"/>
+        <path d="M118 104 L302 196" class="st thin dash"/>
+        <text x="20" y="40" class="t" style="fill:var(--ink)">signal wire</text><text x="290" y="262" class="t">ground wire</text>
+        <text x="110" y="286" class="ts">the other two legs: leave them bare</text>
+      </svg>
+      <figcaption>Legs are joined inside in pairs, and which pairs depends on the maker. Two legs at opposite corners are never a pair, so they always work.</figcaption>
+    </figure>
+    <ol class="steps" style="margin-top:14px">
+      <li><span class="n">B1</span>
+        <h3>Build the chain</h3>
+        <ul>
+          <li>Cut three thin signal wires, about 14 cm, in three colours. Flag the free ends with tape: PLAY, PAUSE, STOP.</li>
+          <li>Cut two black links of about 4 cm.</li>
+          <li>On each switch, solder the signal wire to one corner leg. Lay the tinned wire along the leg and heat both.</li>
+          <li>On the opposite corner leg of each switch, solder the ground: the black <code>P3</code> pin 1 wire to the first switch, then a link on to the second, then a link on to the third. The middle legs take two wires in one joint.</li>
+          <li>Slide heat-shrink over each leg joint and shrink it with the hot barrel of the iron held close, not touching.</li>
+        </ul>
+        <label class="done"><input type="checkbox" data-k="b1">done</label>
+      </li>
+      <li><span class="n">B2</span>
+        <h3>Beep each switch before it goes near the board</h3>
+        <p>One probe on the black <code>P3</code> wire, the other on a signal wire's free end. <span class="no">Silent</span> when released, <span class="yes">beep</span> when pressed. Repeat for all three.</p>
+        <label class="done"><input type="checkbox" data-k="b2">done</label>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section id="b-board" class="jobb">
+  <div class="label b"><i></i>Job B · buttons</div>
+  <h2>Three board joints</h2>
+  <ol class="steps">
+    <li><span class="n">B3</span>
+      <h3>Solder the signal wires to pads 9, 8 and 2</h3>
+      <p>Same module edge and same small joint as step A6. Use the pad map above and count from the antenna end again.</p>
+      <div class="tw"><table>
+        <tr><th>Switch</th><th>Pad</th><th>Pin</th><th>Watch for</th></tr>
+        <tr><td>PLAY</td><td>9</td><td><code>IO18</code></td><td>Pads 8 and 9 are neighbours. Solder pad 9 first, check it, then pad 8.</td></tr>
+        <tr><td>PAUSE</td><td>8</td><td><code>IO19</code></td><td>Pad 7 beside it is unused, so a slip that way is harmless.</td></tr>
+        <tr><td>STOP</td><td>2</td><td><code>IO23</code></td><td>Pad 1 beside it is ground. A bridge there is a STOP button held down for ever.</td></tr>
+      </table></div>
+      <div class="note stop"><b>Keep away from pads 4 and 5.</b> They are the serial lines I use to flash and talk to the board.</div>
+      <p>Lead each wire straight off the module edge and tape all three down together 1 cm out.</p>
+      <label class="done"><input type="checkbox" data-k="b3">done</label>
+    </li>
+  </ol>
+</section>
+
+<section id="b-check" class="jobb">
+  <div class="label g"><i></i>Job B · buttons</div>
+  <h2>Check and test</h2>
+  <ol class="steps">
+    <li><span class="n">B4</span>
+      <h3>Beeps, USB unplugged</h3>
+      <div class="tw"><table>
+        <tr><th>Probe</th><th>Probe</th><th>Expect</th></tr>
+        <tr><td>pad 9, pad 8, pad 2 in turn</td><td>USB socket shell</td><td><span class="no">silent</span> released, <span class="yes">beep</span> with that switch pressed</td></tr>
+        <tr><td>pad 9</td><td>pad 8</td><td class="no">silent</td></tr>
+        <tr><td>pad 2</td><td>pad 3</td><td class="no">silent</td></tr>
+      </table></div>
+      <label class="done"><input type="checkbox" data-k="b4">done</label>
+    </li>
+    <li><span class="n">B5</span>
+      <h3>Plug in and press</h3>
+      <p>Start an episode from the screen, then:</p>
+      <div class="tw"><table>
+        <tr><th>Press</th><th>The jukebox should</th></tr>
+        <tr><td>PAUSE</td><td>Go quiet; the pause button on the screen turns amber. Press again to resume.</td></tr>
+        <tr><td>STOP</td><td>Stop and return to the channel list.</td></tr>
+        <tr><td>PLAY</td><td>Pick the same episode up where it stopped.</td></tr>
+        <tr><td>STOP, held three seconds</td><td>Open Settings.</td></tr>
+      </table></div>
+      <p class="cap">If Settings opens by itself or the list keeps returning to Channels, the STOP line is shorted to ground: look at pads 1 and 2. If PLAY and PAUSE act together, pads 8 and 9 are bridged.</p>
+      <label class="done"><input type="checkbox" data-k="b5">done</label>
+    </li>
+  </ol>
+</section>
+
+</main>
+</div>
+<script>
+document.querySelectorAll('.done input').forEach(function(box){
+  var key='jukebox-solder-'+box.dataset.k, li=box.closest('li');
+  function paint(){ li.classList.toggle('ticked', box.checked); }
+  try{ box.checked = localStorage.getItem(key)==='1'; }catch(e){}
+  paint();
+  box.addEventListener('change',function(){ try{ localStorage.setItem(key, box.checked?'1':'0'); }catch(e){} paint(); });
+});
+</script>
+</body>
+</html>

@@ -88,6 +88,9 @@ overridable in NVS `ota/resolver`. It must be restarted after pulling this commi
 - The on-screen Pause and Stop buttons under a finger (added after the tour; the same
   events pass from the serial keys). The touch mockup in docs/screens still shows the
   older Now Playing layout with four buttons and a state pill.
+- The soldering guide's pad map. It is drawn from the ESP32-WROOM-32 datasheet pin order
+  and the earlier socket pinout notes, not from a photo of this board; its continuity
+  checks (pad 3 to the IO22 wire, pad 6 to the IO21 wire) are what confirm it on the bench.
 - The three physical switches, and whether GPIO 18/19/23 behave with real switches.
 - Joining a network from the on-screen keyboard, and the non-blocking phone-setup portal
   started from the Wi-Fi screen (the boot-time portal was proven; this path is new).
@@ -103,8 +106,10 @@ overridable in NVS `ota/resolver`. It must be restarted after pulling this commi
 
 ## Next steps, in order
 
-1. Wire the MAX98357A and speaker (docs/amp-wiring-guide.html) and listen.
-2. Wire the three switches to 18/19/23 and print the caps.
+1. Solder the MAX98357A and speaker and listen: docs/soldering-guide.html, Job A. DIN goes
+   to the ESP32 module's edge pad for IO16 (12th from the antenna on the IO22 side).
+2. Solder the three switches to the module's edge pads for IO18/19/23 (same guide, Job B)
+   and print the caps.
 3. Exercise the keyboard join and the phone portal from the Wi-Fi screen.
 4. KCX module on arrival: version probe, then the driver branch.
 5. Resolver to EC2 with a token, then cut `v0.2.0` (the first release that can play).
