@@ -1,10 +1,18 @@
 """Enclosure D: thin-wall look-and-feel prototype.
 
-Same numbers as docs/enclosure/enclosure-d-mockup.html. One change for printing:
-the front lip under the screen is angled back under the body (perpendicular to the
-face), so the shell prints face-down on the bed with no supports.
+Same numbers as docs/enclosure/enclosure-d-mockup.html. Changes made for printing, all of
+them for the face-down orientation (face on the bed, no supports):
 
-    python3 enclosure/build_d.py            -> enclosure/out/*.stl + enclosure_d_print.3mf
+  * the front lip under the screen is angled back under the body (perpendicular to the face);
+  * the face's outside edges start with a 45 degree bevel instead of a full radius, so the
+    second layer does not step 1.5 mm out over thin air;
+  * the underside is open right back to the back wall and the foot is a U (two sides and the
+    front). A ledge or a foot bar across the back would be the lowest point of a part that
+    hangs from above: a 100 mm bridge in mid-air, which prints as loose strands.
+
+    python3 enclosure/build_d.py     -> enclosure/out/*.stl
+                                        enclosure_d_print.3mf           one filament (default)
+                                        enclosure_d_print_2colour.3mf   face plate on filament 2
 
 World frame: x = width, y = depth (back = 0, front = +y), z = height. Seen from the front,
 the viewer's right is x = 0, so the USB slot sits on the x = 0 side wall.
@@ -12,12 +20,11 @@ the viewer's right is x = 0, so the USB slot sits on the x = 0 side wall.
 from __future__ import annotations
 
 import math
-import sys
 from pathlib import Path
 
 import numpy as np
 import trimesh
-from manifold3d import CrossSection, Manifold
+from manifold3d import CrossSection, JoinType, Manifold
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "out"
@@ -33,6 +40,10 @@ PLATE = {"x0": 5.5, "b0": 4.0, "b1": L - 5.0, "r": 4.0, "depth": 0.6}
 GRILLE = {"d": 44.0, "hole": 1.6, "pitch": 3.2, "cz": 31.5}
 BTN = {"d": 11.0, "hole": 11.8, "y": 19.0, "spacing": 18.0, "proud": 0.8, "flange": 14.0, "flange_h": 0.8}
 USB = {"len": 12.5, "h": 6.5, "b": L / 2, "inset": 9.0}   # 11.5 x 5.5 plus 1 mm
+RIM = 6.0                  # width of the bottom wall left around the open underside
+FOOT_BACK = 11.0           # the foot's side rails start this far from the back
+FACE_CORNERS = (2, 3)      # profile corners that touch the face plane (= the bed when printing)
+BEVEL = math.sqrt(2.0) - 1.0   # disc radius / ball radius that gives a 45 degree tangent
 SEG = 32
 
 th = math.radians(THETA)
@@ -64,16 +75,25 @@ def corner_centres() -> list[tuple[np.ndarray, float]]:
     return out
 
 
-def rounded_solid(ball: float) -> Manifold:
-    """Profile extruded across the width, every edge rounded: core (+) sphere(ball)."""
+def rounded_solid(ball: float, bed_bevel: bool = False) -> Manifold:
+    """Profile extruded across the width, every edge rounded: core (+) sphere(ball).
+
+    bed_bevel adds a disc on the face plane under each face-corner ball. The hull then leaves
+    the face at 45 degrees and meets the ball tangentially, instead of leaving it horizontally:
+    same outline, same radius higher up, but printable face-down without a first-layer overhang.
+    """
     sphere = Manifold.sphere(ball, SEG).to_mesh().vert_properties[:, :3]
+    turn = np.linspace(0, 2 * math.pi, 48, endpoint=False)
+    disc = ball * N + ball * BEVEL * (np.outer(np.cos(turn), U) + np.outer(np.sin(turn), V))
     pts = []
-    for centre, rho in corner_centres():
-        ring = [centre] if rho < 0.05 else [
-            centre + rho * np.array([math.cos(t), math.sin(t)]) for t in np.linspace(0, 2 * math.pi, 48, endpoint=False)]
+    for i, (centre, rho) in enumerate(corner_centres()):
+        ring = [centre] if rho < 0.05 else [centre + rho * np.array([math.cos(t), math.sin(t)]) for t in turn]
         for q in ring:
             for x in (EDGE, W - EDGE):
-                pts.append(sphere + np.array([x, q[0], q[1]]))
+                at = np.array([x, q[0], q[1]])
+                pts.append(sphere + at)
+                if bed_bevel and i in FACE_CORNERS:
+                    pts.append(disc + at)
     return Manifold.hull_points(np.vstack(pts))
 
 
@@ -98,6 +118,40 @@ def frustum(inset_top: float, inset_bot: float, r: float) -> Manifold:
                 for cx, cy in ((x0 + r, y0 + r), (x1 - r, y0 + r), (x1 - r, y1 - r), (x0 + r, y1 - r))
                 for t in np.linspace(0, 2 * math.pi, 24, endpoint=False)]
     return Manifold.hull_points(np.array(ring(inset_top, PLINTH + 0.6) + ring(inset_bot, 0.0)))
+
+
+def prism_x(poly_yz: list[tuple[float, float]], x0: float, x1: float) -> Manifold:
+    """Convex (y, z) polygon extruded from x0 to x1."""
+    return Manifold.hull_points(np.array([(x, y, z) for x in (x0, x1) for y, z in poly_yz]))
+
+
+def underside_cut() -> Manifold:
+    """Open underside: the bottom wall inside a RIM-wide border on the sides and front, and
+    everything at the back up to the back wall.
+
+    Face-down, the bottom wall hangs from the back-bottom corner, so a strip of it left across
+    the back would start in mid-air. The back cut has two faces. One is the plane through the
+    back-bottom corner centre that contains the face normal (vertical on the printer): the
+    outside of the back wall turns 28 degrees round the corner and stops there, at the top of
+    the print. The other is the back wall's inside face carried straight down, because the
+    inside of the corner radius would flatten into a ceiling just before that stop.
+    """
+    top = PLINTH + WALL + 0.05
+    centre, _ = corner_centres()[0]
+    split = RIM + 1.0
+    reach = (centre[1] + 1.0) / C * S                       # how far the cut plane runs back by z = -1
+    main = prism_x([(split, -1.0), (CHIN - RIM, -1.0), (CHIN - RIM, top), (split, top)], RIM, W - RIM)
+    back = prism_x([(centre[0], centre[1]), (split + 0.01, centre[1]), (split + 0.01, -1.0), (centre[0] - reach, -1.0)],
+                   RIM, W - RIM)
+    y0, z1 = WALL - 0.01, centre[1] + 0.5                   # just off the wall's inside face: no coplanar boolean
+    inside = prism_x([(y0, -1.0), (split + 0.01, -1.0), (split + 0.01, z1), (y0, z1)], RIM, W - RIM)
+    return main + back + inside
+
+
+def foot() -> Manifold:
+    """Recessed foot under the body, U-shaped: two side rails and the front bar."""
+    ring = frustum(5.0, 8.0, 4.0) - frustum(6.6, 9.6, 2.4)
+    return ring - Manifold.cube([W, FOOT_BACK + 1.0, PLINTH + 3.0]).translate([0, -1.0, -1.0])
 
 
 def grille_holes() -> Manifold:
@@ -137,16 +191,17 @@ def button_holes() -> Manifold:
                              for k in (-1, 0, 1)])
 
 
-def shell_and_plate() -> tuple[Manifold, Manifold]:
-    outer = rounded_solid(EDGE)
+def shell_and_plate() -> tuple[Manifold, Manifold, Manifold]:
+    """Shell with the face-plate recess, the plate that fills it, and the one-colour shell
+    (no recess: the face is solid, which is the same outside shape as shell + plate)."""
+    outer = rounded_solid(EDGE, bed_bevel=True)
     inner = rounded_solid(EDGE - WALL)
     shell = outer - inner
-    shell -= Manifold.cube([W - 12, CHIN - 11, PLINTH + WALL + 1.05]).translate([6, 7, -1])   # open underneath
-    shell += frustum(5.0, 8.0, 4.0) - frustum(6.6, 9.6, 2.4)                                  # floating plinth ring
-    shell -= plate_outline(-PLATE["depth"], 3.0)
+    shell -= underside_cut()
+    shell += foot()
     shell -= window() + button_holes() + grille_holes() + usb_slot()
     plate = plate_outline(-PLATE["depth"], 0.0) - window()
-    return shell, plate
+    return shell - plate_outline(-PLATE["depth"], 3.0), plate, shell
 
 
 def icon(kind: int) -> CrossSection:
@@ -177,6 +232,22 @@ def face_down(m: Manifold) -> Manifold:
     return m.rotate([THETA + 180.0, 0, 0])
 
 
+def printability(m: Manifold, layer: float = 0.2, line: float = 0.42) -> dict:
+    """Slice a bed-ready solid and measure what a no-support print has to lay in mid-air:
+    area of each layer that reaches more than one line width past the layer below."""
+    prev = m.slice(layer / 2)
+    out = {"first_layer_islands": len(prev.decompose()), "max_islands": 1, "hanging_mm2": 0.0, "worst_mm2": 0.0, "worst_z": 0.0}
+    for z in np.arange(1.5 * layer, m.bounding_box()[5], layer):
+        cur = m.slice(z)
+        hang = (cur - prev.offset(line, JoinType.Round)).area()
+        out["max_islands"] = max(out["max_islands"], len(cur.decompose()))
+        out["hanging_mm2"] += hang
+        if hang > out["worst_mm2"]:
+            out["worst_mm2"], out["worst_z"] = hang, float(z)
+        prev = cur
+    return {k: round(v, 1) for k, v in out.items()}
+
+
 def report(name: str, tm: trimesh.Trimesh) -> None:
     e = tm.extents
     print(f"{name:28s} {e[0]:6.1f} x {e[1]:6.1f} x {e[2]:6.1f} mm  watertight={tm.is_watertight}  vol={tm.volume / 1000:6.1f} cm3")
@@ -184,27 +255,36 @@ def report(name: str, tm: trimesh.Trimesh) -> None:
 
 def main() -> int:
     OUT.mkdir(exist_ok=True)
-    shell, plate = shell_and_plate()
+    shell, plate, solid = shell_and_plate()
     print(f"outer {W:.1f} x {D:.1f} x {HB:.1f} mm, chin at depth {CHIN:.1f}, face {THETA} deg")
     overlap = (shell ^ plate).volume()
     print(f"plate/shell overlap {overlap:.3f} mm3 (should be ~0)")
 
     to_trimesh(shell).export(OUT / "enclosure_d_upright_preview.stl")
 
-    fs, fp = face_down(shell), face_down(plate)
-    zmin = min(fs.bounding_box()[2], fp.bounding_box()[2])
-    fs, fp = fs.translate([0, 0, -zmin]), fp.translate([0, 0, -zmin])
-    t_shell, t_plate, t_caps = to_trimesh(fs), to_trimesh(fp), to_trimesh(caps())
-    for name, tm in (("enclosure_d_shell", t_shell), ("enclosure_d_faceplate", t_plate), ("enclosure_d_caps", t_caps)):
+    fs, fp, fo = face_down(shell), face_down(plate), face_down(solid)
+    zmin = min(m.bounding_box()[2] for m in (fs, fp, fo))
+    fs, fp, fo = (m.translate([0, 0, -zmin]) for m in (fs, fp, fo))
+    meshes = {"enclosure_d_shell": to_trimesh(fs), "enclosure_d_faceplate": to_trimesh(fp),
+              "enclosure_d_shell_onecolour": to_trimesh(fo), "enclosure_d_caps": to_trimesh(caps())}
+    for name, tm in meshes.items():
+        if not (tm.is_watertight and tm.is_winding_consistent and tm.volume > 0):
+            raise SystemExit(f"{name}: mesh is not a closed, consistently wound solid")
         tm.export(OUT / f"{name}.stl")
         report(name, tm)
+    print("face-down, no supports:", printability(fo))
 
-    sys.path.insert(0, str(HERE.parents[1] / "enclosure"))
     from bambu3mf import write_bambu_3mf
-    info = write_bambu_3mf(OUT / "enclosure_d_print.3mf", "jukebox_enclosure_d",
-                           [{"name": "shell", "mesh": t_shell, "extruder": 1},
-                            {"name": "black face plate", "mesh": t_plate, "extruder": 2}])
-    print("3mf:", info)
+    depth = meshes["enclosure_d_shell"].extents[1]
+    caps_obj = {"name": "button caps", "offset": (0.0, -(depth / 2 + 16.0)),
+                "parts": [{"name": "caps", "mesh": meshes["enclosure_d_caps"], "extruder": 1}]}
+    one = [{"name": "enclosure D", "parts": [{"name": "shell", "mesh": meshes["enclosure_d_shell_onecolour"], "extruder": 1}]},
+           caps_obj]
+    two = [{"name": "enclosure D", "parts": [{"name": "shell", "mesh": meshes["enclosure_d_shell"], "extruder": 1},
+                                            {"name": "face plate", "mesh": meshes["enclosure_d_faceplate"], "extruder": 2}]},
+           caps_obj]
+    print("3mf one filament :", write_bambu_3mf(OUT / "enclosure_d_print.3mf", "jukebox_enclosure_d", one))
+    print("3mf two filaments:", write_bambu_3mf(OUT / "enclosure_d_print_2colour.3mf", "jukebox_enclosure_d_2colour", two))
     return 0
 
 
