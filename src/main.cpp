@@ -17,6 +17,7 @@
 #include "display.h"
 #include "input.h"
 #include "ota.h"
+#include "portal_guard.h"
 #include "ui/ui.h"
 #include "version.h"
 
@@ -25,8 +26,8 @@ static const uint32_t kPortalTimeoutS = 180;
 
 static std::vector<channels::Channel> channelList;
 
-// Per-device key for the setup hotspot. WiFiManager registers its /update
-// firmware-upload route unconditionally, so the hotspot must not be open. The key is
+// Per-device key for the setup hotspot, so the portal is never an open network (its
+// upload and erase pages are also taken away, see portal_guard.h). The key is
 // random, generated once from the hardware RNG and kept in NVS; it is never derived
 // from anything the AP broadcasts. It is printed on serial and shown on the boot
 // screen so nobody ever types it from memory.
@@ -54,9 +55,10 @@ static bool connectWifi() {
     WiFi.mode(WIFI_STA);
     WiFi.setHostname("podcast-jukebox");
     WiFiManager wm;
+    portal_guard::lockDown(wm);
     wm.setConfigPortalTimeout(kPortalTimeoutS);
     wm.setConnectTimeout(20);
-    std::vector<const char*> menu = {"wifi", "info", "exit"};  // no upload page in the menu
+    std::vector<const char*> menu = {"wifi", "exit"};
     wm.setMenu(menu);
     String key = setupKey();
     wm.setAPCallback([&key](WiFiManager*) {

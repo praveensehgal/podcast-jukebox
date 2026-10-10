@@ -7,6 +7,7 @@
 
 #include "app_internal.h"
 #include "bt_emitter.h"
+#include "portal_guard.h"
 #include "resolver_client.h"
 #include "settings.h"
 #include "ui/ui.h"
@@ -120,10 +121,14 @@ static void openPhone() {
     stopPlayback();
     screen = Screen::Phone;
     ui::phoneShow(kSetupSsid, hotspotKey.c_str());
+    // Leave the home network first: the portal's web server listens on every interface,
+    // and it must be reachable only through the WPA2 setup hotspot.
+    WiFi.disconnect(false, false);
     portal = new WiFiManager();
+    portal_guard::lockDown(*portal);
     portal->setConfigPortalBlocking(false);
     portal->setConfigPortalTimeout(kPortalTimeoutS);
-    std::vector<const char*> menu = {"wifi", "exit"};   // no firmware-upload page
+    std::vector<const char*> menu = {"wifi", "exit"};
     portal->setMenu(menu);
     portal->startConfigPortal(kSetupSsid, hotspotKey.c_str());
     Serial.printf("[net] phone setup: hotspot %s up\n", kSetupSsid);

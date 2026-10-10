@@ -200,3 +200,52 @@ def test_falls_back_to_the_enclosure_when_the_resolved_url_has_expired(tmp_path)
         resp = c.get("/stream", params={"url": expired})  # the device sends what it was given
         assert resp.status_code == 200 and resp.content == AUDIO
         assert [u for u, _ in origin.gets] == [expired, NEW, fresh]
+
+
+@pytest.mark.asyncio
+async def test_slot_is_freed_even_when_closing_the_upstream_fails():
+    class Broken:
+        closes = 0
+
+        async def aclose(self) -> None:
+            self.closes += 1
+            raise RuntimeError("socket already gone")
+
+    slots = asyncio.Semaphore(1)
+    await slots.acquire()
+    upstream = Broken()
+    cleanup = stream_module._once(upstream, slots)
+    with pytest.raises(RuntimeError):
+        await cleanup()
+    assert slots._value == 1
+    await cleanup()  # second caller: nothing left to do, and no double release
+    assert upstream.closes == 1 and slots._value == 1
+
+
+def test_an_origin_that_never_answers_is_dropped_at_the_open_budget(client, upstream, monkeypatch):
+    from jukebox_resolver import fetcher as fetcher_module
+
+    async def never(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET" and "new.mp3" in str(request.url):
+            await asyncio.sleep(5)
+        return upstream(request)
+
+    client.app.state.fetcher._client._transport._inner = httpx.MockTransport(never)
+    monkeypatch.setattr(fetcher_module, "STREAM_OPEN_BUDGET_S", 0.05)
+    resp = client.get("/stream", params={"url": NEW})
+    assert resp.status_code == 502 and "budget" in resp.json()["error"]
+    assert free_slots(client) == STREAM_CONCURRENCY
+
+
+def test_a_relay_is_cut_at_the_time_limit_and_frees_its_slot(client, upstream, monkeypatch):
+    async def trickle():
+        yield b"a" * 100
+        await asyncio.sleep(5)
+        yield b"b" * 100
+
+    upstream.audio[NEW] = httpx.Response(200, content=trickle())
+    monkeypatch.setattr(stream_module, "STREAM_MAX_SECONDS", 0.2)
+    monkeypatch.setattr(stream_module, "STREAM_CHUNK_BYTES", 100)  # pass chunks on unbuffered
+    resp = client.get("/stream", params={"url": NEW})
+    assert resp.content == b"a" * 100
+    assert free_slots(client) == STREAM_CONCURRENCY

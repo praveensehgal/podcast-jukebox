@@ -4,7 +4,9 @@ The ESP32 in the jukebox has no PSRAM. A TLS session to a podcast CDN cost it 56
 of heap (measured 2026-10-10), which left no room for the MP3 decoder, so it fetches
 audio from here over plain HTTP and this service does the HTTPS, redirects and signed
 URLs. Bounds: only URLs of cached episodes, STREAM_CONCURRENCY relays at once, and
-STREAM_MAX_BYTES per relay.
+STREAM_MAX_BYTES and STREAM_MAX_SECONDS per relay. The slot and the upstream connection
+are released when the response finishes for any reason, including a client that goes
+away or never reads.
 """
 
 from __future__ import annotations
@@ -15,10 +17,10 @@ import re
 from collections.abc import AsyncIterator, Awaitable, Callable
 
 import httpx
-from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
+from starlette.types import Receive, Scope, Send
 
-from .config import STREAM_CHUNK_BYTES, STREAM_MAX_BYTES
+from .config import STREAM_CHUNK_BYTES, STREAM_MAX_BYTES, STREAM_MAX_SECONDS
 from .errors import ApiError
 from .fetcher import Fetcher, FetchError
 
@@ -70,13 +72,15 @@ def _once(upstream: httpx.Response, slots: asyncio.Semaphore) -> Cleanup:
         if done:
             return
         done = True
-        await upstream.aclose()
-        slots.release()
+        try:
+            await upstream.aclose()
+        finally:
+            slots.release()  # even if closing the upstream raises
 
     return cleanup
 
 
-async def _relay(upstream: httpx.Response, cleanup: Cleanup) -> AsyncIterator[bytes]:
+async def _relay(upstream: httpx.Response) -> AsyncIterator[bytes]:
     sent = 0
     try:
         async for chunk in upstream.aiter_raw(STREAM_CHUNK_BYTES):
@@ -87,8 +91,30 @@ async def _relay(upstream: httpx.Response, cleanup: Cleanup) -> AsyncIterator[by
             yield chunk
     except httpx.HTTPError as exc:
         log.info("stream ended early after %d bytes: %s", sent, exc.__class__.__name__)
-    finally:
-        await cleanup()
+
+
+class RelayResponse(StreamingResponse):
+    """A streaming response that always cleans up and never outlives STREAM_MAX_SECONDS.
+
+    Cleanup hangs off the response call itself, not the body generator or a background
+    task: a generator that is never started has no `finally` to run, and background
+    tasks are skipped when the client disconnects.
+    """
+
+    def __init__(self, upstream: httpx.Response, cleanup: Cleanup) -> None:
+        super().__init__(
+            _relay(upstream), status_code=upstream.status_code, headers=_headers(upstream)
+        )
+        self._cleanup = cleanup
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        try:
+            async with asyncio.timeout(STREAM_MAX_SECONDS):
+                await super().__call__(scope, receive, send)
+        except TimeoutError:
+            log.info("stream cut at the %d s limit", int(STREAM_MAX_SECONDS))
+        finally:
+            await self._cleanup()
 
 
 def _headers(upstream: httpx.Response) -> dict[str, str]:
@@ -101,7 +127,7 @@ def _headers(upstream: httpx.Response) -> dict[str, str]:
 
 async def relay_audio(
     fetcher: Fetcher, slots: asyncio.Semaphore, sources: list[str], range_header: str | None
-) -> StreamingResponse:
+) -> RelayResponse:
     wanted = check_range(range_header)
     if slots.locked():
         raise ApiError(429, "too many streams in progress")
@@ -112,9 +138,8 @@ async def relay_audio(
         slots.release()
         raise
     cleanup = _once(upstream, slots)
-    return StreamingResponse(
-        _relay(upstream, cleanup),
-        status_code=upstream.status_code,
-        headers=_headers(upstream),
-        background=BackgroundTask(cleanup),  # also runs if the body was never iterated
-    )
+    try:
+        return RelayResponse(upstream, cleanup)
+    except BaseException:
+        await cleanup()
+        raise

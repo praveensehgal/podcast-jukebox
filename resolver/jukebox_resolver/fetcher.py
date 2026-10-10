@@ -17,6 +17,7 @@ from .config import (
     PROBE_CONCURRENCY,
     RESOLVE_BUDGET_S,
     RESOLVE_TIMEOUT_S,
+    STREAM_OPEN_BUDGET_S,
 )
 from .guard import (  # noqa: F401 - re-exported for callers and tests
     BlockedUrlError,
@@ -108,8 +109,16 @@ class Fetcher:
     async def open_stream(self, url: str, range_header: str | None = None) -> httpx.Response:
         """Open `url` for relaying, following redirects by hand; the caller must aclose().
 
-        Only a 200 or 206 comes back. The Range header rides along on every hop.
+        Only a 200 or 206 comes back. The Range header rides along on every hop, and the
+        whole chain has STREAM_OPEN_BUDGET_S to produce response headers.
         """
+        try:
+            async with asyncio.timeout(STREAM_OPEN_BUDGET_S):
+                return await self._open_stream(url, range_header)
+        except TimeoutError as exc:
+            raise FetchError(f"GET {url}: exceeded {STREAM_OPEN_BUDGET_S} s budget") from exc
+
+    async def _open_stream(self, url: str, range_header: str | None) -> httpx.Response:
         headers = {"Range": range_header} if range_header else {}
         current = url
         for hop in range(MAX_REDIRECTS + 1):

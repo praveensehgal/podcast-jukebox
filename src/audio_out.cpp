@@ -62,15 +62,53 @@ class PersistentI2S : public AudioOutputI2S {
     bool opened_ = false;
 };
 
-// Reuse-safe decoder: the library's begin() leaves the previous stream's leftovers.
-class ReusableMP3 : public AudioGeneratorMP3a {
+// The library's decoder with two holes closed:
+//  - its constructor can fail to allocate Helix's tables and says so only to a null
+//    logger, after which begin() succeeds and loop() eats the stream decoding nothing;
+//    ready() lets play() refuse instead.
+//  - its loop() divides by the channel count of the frame it just decoded. Resuming at
+//    a byte offset lands mid-frame, a false sync can "decode" to zero channels, and the
+//    board reset with IntegerDivideByZero (2026-10-10, resume at 75 s). loop() below is
+//    the same pump with that frame skipped, and with mono handled.
+class GuardedMP3 : public AudioGeneratorMP3a {
    public:
     bool ready() const { return hMP3Decoder != nullptr; }
+
+    bool loop() override {
+        if (running) pump();
+        file->loop();
+        output->loop();
+        return running;
+    }
+
+   private:
+    void pump() {
+        while (validSamples) {
+            int at = lastChannels == 1 ? curSample : curSample * 2;
+            lastSample[0] = outSample[at];
+            lastSample[1] = lastChannels == 1 ? outSample[at] : outSample[at + 1];
+            if (!output->ConsumeSample(lastSample)) return;   // I2S is full; come back
+            validSamples--;
+            curSample++;
+        }
+        if (!FillBufferWithValidFrame()) { running = false; return; }   // end of stream
+        unsigned char* in = buff;
+        int left = buffValid;
+        if (MP3Decode(hMP3Decoder, &in, &left, outSample, 0) != 0) return;   // resync next pass
+        MP3FrameInfo fi;
+        MP3GetLastFrameInfo(hMP3Decoder, &fi);
+        if (fi.nChans < 1 || fi.nChans > 2 || fi.samprate <= 0 || fi.outputSamps <= 0) return;
+        lastFrameEnd = buffValid - left;
+        if ((unsigned)fi.samprate != lastRate) { output->SetRate(fi.samprate); lastRate = fi.samprate; }
+        if (fi.nChans != lastChannels) { output->SetChannels(fi.nChans); lastChannels = fi.nChans; }
+        curSample = 0;
+        validSamples = fi.outputSamps / fi.nChans;
+    }
 };
 
 static AudioSourceHttps* source = nullptr;
 static AudioFileSourceBuffer* buffer = nullptr;
-static ReusableMP3* decoder = nullptr;   // about 31 KB with Helix's tables
+static GuardedMP3* decoder = nullptr;   // about 31 KB with Helix's tables
 static bool loaded = false;              // a stream is attached to the decoder
 static PersistentI2S* out = nullptr;
 
@@ -122,7 +160,7 @@ bool play(const String& url, uint32_t resumeSeconds, uint32_t sizeBytes, uint32_
     }
     heapLine("stream open");
     // Decoder first (fixed 31 KB), then the ring, which can shrink to what is left.
-    decoder = new (std::nothrow) ReusableMP3();
+    decoder = new (std::nothrow) GuardedMP3();
     if (!decoder || !decoder->ready()) { Serial.println("[audio] no room for the decoder"); teardown(); return false; }
     if (!takeRing()) { Serial.println("[audio] no room for the ring buffer"); teardown(); return false; }
     buffer = new (std::nothrow) AudioFileSourceBuffer(source, ringMem, ringBytes);

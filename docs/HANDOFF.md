@@ -20,8 +20,8 @@ KCX_BT_EMITTER arrives 2026-10-11.
 | Channels, Episodes, Now Playing | working | serial tour: open channel, play, volume, skip +30/-30, pause, resume, Back, Now Playing pill, STOP, PLAY resumes at the saved second |
 | Settings, Wi-Fi list, Bluetooth | working | tour: 13 to 15 networks listed, sound and sleep pills toggle, Bluetooth shows "module not fitted" |
 | Password keyboard, phone QR setup | built, not exercised | compiles and opens; no join was attempted from the new keyboard or the new non-blocking portal |
-| Playback | working through the relay | 16 KB/s read rate (128 kbps, real time), about 85 KB free with a stream open, 8 relayed streams in one run, resume from the server's saved position after a reboot |
-| Resolver | 135 tests, 96% coverage, ruff clean | `/stream` added with 16 tests |
+| Playback | working through the relay | 16 KB/s read rate (128 kbps, real time), about 85 KB free with a stream open, 16 resumes and skips in one run with no reset, resume from the server's saved position after a reboot |
+| Resolver | 138 tests, 96% coverage, ruff clean | `/stream` added with 19 tests |
 | OTA, first-boot portal, channel list | working (earlier the same day) | 0.0.0-dev to 0.1.1 self-update; phone joined `Jukebox-Setup` |
 | Enclosure D | one-filament 3MF regenerated | meshes watertight; not sliced on the H2C profile, not printed since the fix |
 
@@ -68,6 +68,9 @@ overridable in NVS `ota/resolver`. It must be restarted after pulling this commi
   go to a single-slot table: that is the end of remote updates.
 - The setup hotspot is WPA2 with a random per-device key in NVS (`net/setupkey2`).
   WiFiManager always registers its firmware-upload route, so the hotspot is never open.
+- Keep `GuardedMP3` in `audio_out.cpp`. The library's own loop divides by the channel
+  count and reset the board on a resume that landed mid-frame; it also hides a failed
+  decoder allocation.
 - Never pipe gitleaks through `tail` in a commit chain; that is how a real key got pushed.
 
 ## Nobody has verified
@@ -75,6 +78,10 @@ overridable in NVS `ota/resolver`. It must be restarted after pulling this commi
 - Sound. No amp is wired. The decode is now paced by the I2S clock at the right byte
   rate, which the earlier "streaming works" result was not: that run had a decoder that
   silently failed to allocate, and nothing was being decoded.
+- The portal lockdown (`src/portal_guard.h`): WiFiManager's /update, /u, /erase,
+  /restart, /info and /param pages are answered with 404 by a handler registered ahead
+  of the library's. Built and flashed, but nobody has joined the hotspot and requested
+  those paths to see the 404.
 - The three physical switches, and whether GPIO 18/19/23 behave with real switches.
 - Joining a network from the on-screen keyboard, and the non-blocking phone-setup portal
   started from the Wi-Fi screen (the boot-time portal was proven; this path is new).

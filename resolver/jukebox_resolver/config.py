@@ -29,6 +29,8 @@ TITLE_MAX_CHARS = 200
 STREAM_CONCURRENCY = 4  # audio relays in flight; one device plays one episode
 STREAM_MAX_BYTES = 1024 * 1024 * 1024  # per relay; a three-hour episode is ~250 MB
 STREAM_CHUNK_BYTES = 16 * 1024
+STREAM_OPEN_BUDGET_S = 30.0  # redirect chain up to the first audio byte's headers
+STREAM_MAX_SECONDS = 6 * 3600.0  # a relay runs at listening speed; nothing lasts longer
 
 
 @dataclass(frozen=True)
