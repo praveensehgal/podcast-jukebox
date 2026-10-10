@@ -33,7 +33,10 @@ static std::vector<channels::Channel> channelList;
 static String setupKey() {
     Preferences p;
     p.begin("net", false);
-    String key = p.getString("setupkey", "");
+    // "setupkey" was published by mistake on 2026-10-10 (bench board); drop it so every
+    // board rolls a fresh key under the new name on its next boot.
+    if (p.isKey("setupkey")) p.remove("setupkey");
+    String key = p.getString("setupkey2", "");
     if (key.length() < 12) {
         static const char* alphabet = "abcdefghjkmnpqrstuvwxyz23456789";  // no 0/O/1/l/i
         const size_t n = strlen(alphabet);
@@ -41,7 +44,7 @@ static String setupKey() {
         for (int i = 0; i < 12; i++) buf[i] = alphabet[esp_random() % n];
         buf[12] = '\0';
         key = String(buf);
-        p.putString("setupkey", key);
+        p.putString("setupkey2", key);
     }
     p.end();
     return key;
