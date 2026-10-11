@@ -1,2 +1,3 @@
 out/*_preview.stl
 __pycache__/
+.ruff_cache/
