@@ -1,14 +1,21 @@
 # Handoff
 
-Last updated 2026-10-10 (afternoon, touch build). The Oracle memory chunk "Podcast
+Last updated 2026-10-29 (resolver moved to EC2). The Oracle memory chunk "Podcast
 Jukebox state" points here; this file holds the operational detail.
 
 ## State
 
-The firmware on the bench Sunton (`/dev/cu.wchusbserial2140`, dev build `0.0.0-dev`) is
+The firmware on the bench Sunton (`/dev/cu.wchusbserial2120`, dev build `0.0.0-dev`) is
 the touch build: eight screens driven by taps, three top buttons read on GPIO 18/19/23,
-audio fetched through the resolver over plain HTTP. Not yet released: `v0.1.1` is the
-last tag and it is the old knob build, which cannot play (see decision 005).
+audio fetched through the resolver over plain HTTP. The resolver is on EC2
+(`http://jukebox.sehgalp.com`, decision 005 "Hosting"); nothing runs on the Mac. Proven
+2026-10-29 with the Mac's resolver stopped: The Daily listed, played 272 s at real time
+with about 73 KB free, paused, and the position was saved on EC2.
+
+On a Mac with the notetaker daemon running, the daemon used to open any WCH serial port
+when the CrowPanel was unplugged and reset this board every 30 s (fixed in notetaker,
+branch `fix/port-finder-other-devices`). If the board reboots on the Mac, run
+`lsof /dev/cu.wchusbserial*` first.
 
 What is missing is hardware. The MAX98357A and speaker are not wired, so nobody has
 heard sound. The three top switches are not wired (serial keys stand in). The
@@ -44,9 +51,14 @@ Driving it from a script: open the port with pyserial (`~/.platformio/penv/bin/p
 set `dtr=False` and `rts=False` before `open()`, then pulse RTS to reset. `pio device
 monitor` needs a TTY.
 
-Resolver: runs on the Mac Studio for the bench (`uv run uvicorn jukebox_resolver.server:app
---host 0.0.0.0 --port 8787` from `resolver/`), device default `http://192.168.50.116:8787`,
-overridable in NVS `ota/resolver`. It must be restarted after pulling this commit.
+Resolver: EC2, `/srv/jukebox` (`sudo docker compose up -d --build` after an rsync of
+`resolver/`, excluding `.venv`, `tests`, `resolver.db*` and `.env`), behind the nginx
+site in `resolver/deploy/`. Device default `http://jukebox.sehgalp.com`, overridable in
+NVS `ota/resolver`. Serial setup commands, any build: `#token <value>` (from Bitwarden
+`JUKEBOX_TOKEN`; pipe it in via agent-run, never type it into a transcript),
+`#resolver <url>` (empty = default), `#cfg` (prints the URL and the token's length).
+For a bench resolver on the Mac: `#resolver http://<mac-ip>:8787` and run uvicorn from
+`resolver/`; `#resolver` alone goes back to EC2.
 
 ## Constraints (do not re-litigate)
 
@@ -119,7 +131,7 @@ overridable in NVS `ota/resolver`. It must be restarted after pulling this commi
   115200 baud and `AT+ADDLINKADD` + `AT+PAIR` instead, and expects 5 V serial levels.
   The driver must read `AT+GMR?` and branch. The PCM5102A's 2.1 Vrms line-out likely
   needs a divider (about 10 k / 4.7 k per channel) into the module.
-- The resolver anywhere but the Mac: no token is sent by the firmware yet.
+- Rotating the token end to end (decision 005 "Hosting" has the steps; not yet run).
 
 ## Next steps, in order
 
@@ -135,5 +147,4 @@ overridable in NVS `ota/resolver`. It must be restarted after pulling this commi
    switches for an earlier test.
 4. Exercise the keyboard join and the phone portal from the Wi-Fi screen.
 5. KCX module on arrival: version probe, then the driver branch.
-6. Resolver to EC2 with a token, then cut `v0.2.0` (the first release that can play).
-7. Final print with WALL = 2.4 once the fit test passes.
+6. Final print with WALL = 2.4 once the fit test passes.
