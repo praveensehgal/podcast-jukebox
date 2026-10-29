@@ -34,4 +34,4 @@ fails in GitHub, not on his coffee table.
 | 17 | The Rewatchables | https://feeds.megaphone.fm/the-rewatchables |
 | 18 | Bill Simmons | https://feeds.megaphone.fm/the-bill-simmons-podcast |
 | 19 | WTF with Marc Maron | https://feeds.acast.com/public/shows/wtf-with-marc-maron-podcast |
-| 20 | Pardon My Take | https://feeds.megaphone.fm/pardon-my-take |
+| 20 | Pardon My Take | https://mcsorleys.barstoolsports.com/feed/pardon-my-take |
