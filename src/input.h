@@ -31,4 +31,8 @@ bool poll(Event& e);                 // call from loop(); fills `e` when one is 
 void push(Kind k, int16_t value = 0);
 void feedSerialKey(int c);   // P p s S t b g n - + < > j, 1-8 = list item
 
+// A serial line that starts with '#' is a setup command, not keys: everything up to the
+// newline (without the '#') goes to this handler, e.g. "token abc123" or "cfg".
+void setCommandHandler(void (*handler)(const String& line));
+
 }  // namespace input

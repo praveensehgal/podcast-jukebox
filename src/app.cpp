@@ -72,7 +72,14 @@ static void openChannel(int idx) {
     browsingChannel = idx;
     const channels::Channel& c = (*chans)[idx];
     ui::noticeShow(c.name.c_str(), "Fetching episodes...");
-    if (!resolver::episodes(c.feed, browsing)) browsing.clear();
+    if (!resolver::episodes(c.feed, browsing)) {
+        // An unreachable server is not an empty channel; say which it is, then go back.
+        browsing.clear();
+        ui::noticeShow("Can't reach the podcast server.", "Tap the channel to try again.");
+        delay(2500);
+        showChannels();
+        return;
+    }
     showEpisodes();
 }
 

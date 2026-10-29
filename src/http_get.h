@@ -26,4 +26,10 @@ void close(esp_http_client_handle_t c);
 // Convenience: fetch a small text body (manifest, channel list). Caps at maxBytes.
 bool text(const String& url, String& body, size_t maxBytes = 16 * 1024);
 
+// Every request to a URL that starts with `urlPrefix` carries "X-Jukebox-Token: token";
+// nothing else does (GitHub never sees it), and a redirect off that prefix drops it.
+// An empty token sends nothing.
+void setAuth(const String& urlPrefix, const String& token);
+void addAuth(esp_http_client_handle_t c, const String& url);
+
 }  // namespace http_get

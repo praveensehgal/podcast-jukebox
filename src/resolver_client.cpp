@@ -11,21 +11,41 @@
 
 namespace resolver {
 
-static const char* kDefaultBase = "http://192.168.50.116:8787";  // Mac Studio on the LAN, for now
+// EC2 behind nginx. Plain HTTP on purpose: no TLS session next to the decoder (decision 005).
+static const char* kDefaultBase = "http://jukebox.sehgalp.com";
 
-String baseUrl() {
+static String readPref(const char* key) {
+    Preferences p;
+    p.begin("ota", false);   // read-only fails (and logs) while the namespace does not exist yet
+    String v = p.getString(key, "");
+    p.end();
+    return v;
+}
+
+static void writePref(const char* key, const String& value) {
     Preferences p;
     p.begin("ota", false);
-    String url = p.getString("resolver", "");
+    if (value.length()) p.putString(key, value); else p.remove(key);
     p.end();
+}
+
+String baseUrl() {
+    String url = readPref("resolver");
     return url.length() ? url : String(kDefaultBase);
 }
 
+String token() { return readPref("token"); }
+
+void begin() { http_get::setAuth(baseUrl(), token()); }
+
 void setBaseUrl(const String& url) {
-    Preferences p;
-    p.begin("ota", false);
-    if (url.length()) p.putString("resolver", url); else p.remove("resolver");
-    p.end();
+    writePref("resolver", url);
+    begin();
+}
+
+void setToken(const String& t) {
+    writePref("token", t);
+    begin();
 }
 
 String deviceId() {
@@ -123,9 +143,11 @@ bool savePosition(const String& episodeId, uint32_t posS, uint32_t durationS) {
     cfg.url = url.c_str();
     cfg.method = HTTP_METHOD_POST;
     cfg.timeout_ms = 8000;
+    cfg.disable_auto_redirect = true;   // perform() would carry the token to a 3xx target
     esp_http_client_handle_t c = esp_http_client_init(&cfg);
     if (!c) return false;
     esp_http_client_set_header(c, "Content-Type", "application/json");
+    http_get::addAuth(c, url);
     esp_http_client_set_post_field(c, body.c_str(), body.length());
     esp_err_t err = esp_http_client_perform(c);
     int status = esp_http_client_get_status_code(c);

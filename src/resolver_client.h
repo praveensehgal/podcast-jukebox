@@ -19,10 +19,15 @@ struct Episode {
     bool played = false;      // finished (pos within 60 s of the end)
 };
 
-// Base URL, NVS namespace "ota" key "resolver". Default is the Mac Studio on the LAN
-// until the service moves to EC2.
+// Base URL, NVS namespace "ota" key "resolver"; default http://jukebox.sehgalp.com (EC2).
+// The access token is NVS "ota" key "token", set over serial with `#token <value>`; it
+// is never compiled in (the repo is public, decision 003). begin() applies both to
+// http_get, and the setters re-apply them. An empty value clears the NVS key.
+void begin();
 String baseUrl();
 void setBaseUrl(const String& url);
+String token();
+void setToken(const String& token);
 
 // Newest-first episodes for a feed, merged with this device's positions.
 bool episodes(const String& feed, std::vector<Episode>& out, int limit = 12);
