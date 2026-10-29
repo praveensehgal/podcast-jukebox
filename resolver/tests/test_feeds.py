@@ -133,3 +133,22 @@ def test_non_http_enclosures_are_dropped():
         '<updated>2025-09-01T10:00:00Z</updated><link rel="enclosure" href="ftp://a/x"/></entry></feed>'
     )
     assert parse_feed(FEED_URL, atom) == []
+
+
+def test_a_feed_the_size_of_the_daily_fits_the_cap_and_parses():
+    # The Daily's feed measured 20,574,634 bytes on 2026-10-29 and was refused by the old
+    # 5 MB cap, so the channel showed no episodes. Build one past that size and parse it.
+    from jukebox_resolver.config import FEED_MAX_BYTES, MAX_EPISODES
+
+    item = (
+        "<item><title>Episode {n}</title><guid>ep-{n}</guid>"
+        "<pubDate>Wed, 03 Sep 2025 10:30:00 GMT</pubDate>"
+        '<enclosure url="https://cdn.example.org/{n}.mp3" length="1" type="audio/mpeg"/>'
+        "<description>{pad}</description></item>"
+    )
+    pad = "x" * 2000
+    body = "".join(item.format(n=n, pad=pad) for n in range(10_500))
+    xml = f'<?xml version="1.0"?><rss version="2.0"><channel>{body}</channel></rss>'
+    assert len(xml) > 21_000_000
+    assert len(xml) <= FEED_MAX_BYTES
+    assert len(parse_feed(FEED_URL, xml)) == MAX_EPISODES
