@@ -18,6 +18,7 @@
 #include "input.h"
 #include "ota.h"
 #include "portal_guard.h"
+#include "resolver_client.h"
 #include "ui/ui.h"
 #include "version.h"
 
@@ -91,6 +92,26 @@ static void loadChannels() {
     ui::bootStatus(line);
 }
 
+// Serial setup commands ('#' lines, see input.h). The token is never echoed, only its length.
+//   #token <value>    store the resolver access token   (#token with no value clears it)
+//   #resolver <url>   point at another resolver          (#resolver with no value = default)
+//   #cfg              show the resolver URL and whether a token is stored
+static void printConfig() {
+    Serial.printf("[cfg] resolver %s  token %u chars\n", resolver::baseUrl().c_str(),
+                  (unsigned)resolver::token().length());
+}
+
+static void onCommand(const String& line) {
+    int sp = line.indexOf(' ');
+    String cmd = sp < 0 ? line : line.substring(0, sp);
+    String arg = sp < 0 ? String() : line.substring(sp + 1);
+    arg.trim();
+    if (cmd == "token") resolver::setToken(arg);
+    else if (cmd == "resolver") resolver::setBaseUrl(arg);
+    else if (cmd != "cfg") { Serial.printf("[cfg] unknown command '%s'\n", cmd.c_str()); return; }
+    printConfig();
+}
+
 void setup() {
     Serial.begin(115200);
     delay(200);
@@ -99,6 +120,9 @@ void setup() {
     display::begin();
     ui::bootShow(fwVersion());
     input::begin();
+    input::setCommandHandler(onCommand);
+    resolver::begin();
+    printConfig();
 
     if (connectWifi()) {
         ui::bootStatus("Checking for updates...");

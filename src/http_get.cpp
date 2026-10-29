@@ -9,6 +9,22 @@
 namespace http_get {
 
 static const int kMaxRedirects = 5;
+static const char* kAuthHeader = "X-Jukebox-Token";
+static String authPrefix;
+static String authToken;
+
+void setAuth(const String& urlPrefix, const String& token) {
+    authPrefix = urlPrefix;
+    authToken = token;
+}
+
+static bool wantsAuth(const String& url) {
+    return authToken.length() && authPrefix.length() && url.startsWith(authPrefix);
+}
+
+void addAuth(esp_http_client_handle_t c, const String& url) {
+    if (wantsAuth(url)) esp_http_client_set_header(c, kAuthHeader, authToken.c_str());
+}
 
 static bool isRedirect(int status) {
     return status == 301 || status == 302 || status == 303 || status == 307 || status == 308;
@@ -27,6 +43,7 @@ esp_http_client_handle_t open(const String& url, int bufferSize, int timeoutMs, 
     cfg.disable_auto_redirect = true;  // we do it by hand below
     esp_http_client_handle_t c = esp_http_client_init(&cfg);
     if (!c) return nullptr;
+    addAuth(c, url);
     char range[40];
     if (rangeStart > 0) {
         snprintf(range, sizeof(range), "bytes=%u-", (unsigned)rangeStart);
@@ -55,6 +72,10 @@ esp_http_client_handle_t open(const String& url, int bufferSize, int timeoutMs, 
         if (esp_http_client_set_redirection(c) != ESP_OK) {
             Serial.println("[http] redirect without a usable Location");
             break;
+        }
+        char next[160];
+        if (esp_http_client_get_url(c, next, sizeof(next)) != ESP_OK || !wantsAuth(String(next))) {
+            esp_http_client_delete_header(c, kAuthHeader);   // the token stays with the resolver
         }
     }
     close(c);

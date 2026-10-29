@@ -69,8 +69,31 @@ void begin() {
     Serial.printf("[input] buttons play %d pause %d stop %d; serial: P p s S t b g n - + < > j 1-8\n", kPinPlay, kPinPause, kPinStop);
 }
 
+// ---- '#' setup commands over serial ----
+static void (*commandHandler)(const String&) = nullptr;
+static String commandLine;
+static bool inCommand = false;
+static const size_t kMaxCommand = 200;
+
+void setCommandHandler(void (*handler)(const String& line)) { commandHandler = handler; }
+
+static void feedSerial(int c) {
+    if (!inCommand) {
+        if (c == '#') { inCommand = true; commandLine = ""; return; }
+        feedSerialKey(c);
+        return;
+    }
+    if (c == '\n' || c == '\r') {
+        inCommand = false;
+        commandLine.trim();
+        if (commandHandler && commandLine.length()) commandHandler(commandLine);
+        return;
+    }
+    if (commandLine.length() < kMaxCommand) commandLine += (char)c;
+}
+
 bool poll(Event& e) {
-    while (Serial.available()) feedSerialKey(Serial.read());
+    while (Serial.available()) feedSerial(Serial.read());
     uint32_t now = millis();
     for (auto& b : buttons) pollButton(b, now);
     if (qHead == qTail) return false;
