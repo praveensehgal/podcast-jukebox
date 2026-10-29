@@ -143,6 +143,7 @@ bool savePosition(const String& episodeId, uint32_t posS, uint32_t durationS) {
     cfg.url = url.c_str();
     cfg.method = HTTP_METHOD_POST;
     cfg.timeout_ms = 8000;
+    cfg.disable_auto_redirect = true;   // perform() would carry the token to a 3xx target
     esp_http_client_handle_t c = esp_http_client_init(&cfg);
     if (!c) return false;
     esp_http_client_set_header(c, "Content-Type", "application/json");

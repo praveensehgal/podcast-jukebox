@@ -15,11 +15,17 @@ static String authToken;
 
 void setAuth(const String& urlPrefix, const String& token) {
     authPrefix = urlPrefix;
+    while (authPrefix.endsWith("/")) authPrefix.remove(authPrefix.length() - 1);
     authToken = token;
 }
 
+// The prefix must end where the URL's authority ends: "http://jukebox.sehgalp.com" matches
+// ".../stream?x" but not "http://jukebox.sehgalp.com.evil.com/" or "...com@evil.com/".
 static bool wantsAuth(const String& url) {
-    return authToken.length() && authPrefix.length() && url.startsWith(authPrefix);
+    if (!authToken.length() || !authPrefix.length() || !url.startsWith(authPrefix)) return false;
+    if (url.length() == authPrefix.length()) return true;
+    char next = url[authPrefix.length()];
+    return next == '/' || next == '?' || next == '#';
 }
 
 void addAuth(esp_http_client_handle_t c, const String& url) {
